@@ -48,10 +48,7 @@ def transformer_ville_effectifs(ville) :
         ville = re.sub(r'\(.*', '', str(ville)) 
 
         #met tout le texte en majuscule
-        ville = str(ville).upper()    
-
-        #remplace les ST en SAINT
-        ville = str(ville).replace("ST", "SAINT")          
+        ville = str(ville).upper()        
 
         #remplace les - en espace " "
         ville = str(ville).replace("-", " ")  
@@ -59,17 +56,34 @@ def transformer_ville_effectifs(ville) :
         #remplace les - en espace " "
         ville = str(ville).replace("–", " ")       
 
-    
-        # Supprimer les apostrophes typographiques
-        ville = str(ville).replace("’", " ")  
+        # Supprimer les apostrophes typographiques ’
+        #ville = str(ville).replace("’", " ")  
 
-        # Supprimer LE ou LA en début de nom de ville
-        ville = re.sub(r'^(LE|LA)\s+', '', ville)
+         # Supprimer toutes les variations d'apostrophes
+        ville = re.sub(r"[’‘']", " ", ville)
+        
+        #remplace les ST en SAINT
+        ville = str(ville).replace("ST ", "SAINT ") 
 
+        #remplace les ST en SAINT
+        ville = str(ville).replace("/", " SUR ")
+
+        #remplace les ST en SAINT
+        ville = str(ville).replace(" *", "")
+
+        #remplace les "L " en ""
+        #ville = str(ville).replace("L ", "") 
+
+        # Supprimer "L " en début de chaîne
+        ville = re.sub(r'^L\s+', '', str(ville))
+        
+        # Supprimer LE ou LA ou LES en début de nom de ville
+        ville = re.sub(r'^(LE|LA|LES)\s+', '', ville)
+        
         # Supprimer les accents
         ville = ''.join(c for c in unicodedata.normalize('NFD', ville) if unicodedata.category(c) != 'Mn')
 
-        
+    
 
     #retire les espaces inutiles
     return ville.strip()                                    
@@ -77,9 +91,12 @@ def transformer_ville_effectifs(ville) :
 
 effectifs_2016['Nom Ville'] = effectifs_2016['Nom Ville'].apply(transformer_ville_effectifs)
 
-print(effectifs_2016['Nom Ville'][139:142])
 
-#supprimer les ' et remplacer par un espace attention conserver de DE car souvent utilisé dans codgeo et voir ligne 93 le - pas supprimé
+
+#attention conserver le DE car souvent utilisé dans codgeo et voir tous les caractères spéciaux qui trainent
+#voir ligne 3043 2 villes dans 1 case
+#touquet paris plage écrit touquet dans effectifs_2016
+#a voir si / ecrit avec des espaces ou non
 #prochaine étape récupérer le v_commune pour 2016 et comparer, si c'est toujours la même chose alors s'arreter la 
 #concernant les différences liées à l'orthographe, je peux pas faire grand chose
 
@@ -98,7 +115,7 @@ dictionnaire_codgeo = CODGEO_com.set_index('NCC')['COM'].to_dict()
 #attribution des codgeo dans une nouvelle colonne CODGEO : utilisation de la méthode map qui associe les cles du dico aux valeurs de Source\xa0: Ministère de l’intérieur (DLPAJ)
 effectifs_2016['CODGEO'] = effectifs_2016['Nom Ville'].map(dictionnaire_codgeo)
 
-print(effectifs_2016['Nom Ville'][85:120])
+print(effectifs_2016['Nom Ville'][215:232])
 #print(effectifs_2016[100:150])
 
-#effectifs_2016.to_csv("C:\\Users\\Guillaume\\Downloads\\effectifs_2016_test_codgeo4.csv", index=False)
+#effectifs_2016.to_csv("C:\\Users\\Guillaume\\Downloads\\effectifs_2016_test_codgeo8.csv", index=False)
