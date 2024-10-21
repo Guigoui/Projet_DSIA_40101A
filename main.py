@@ -97,6 +97,7 @@ effectifs_2016['Nom Ville'] = effectifs_2016['Nom Ville'].apply(transformer_vill
 #voir ligne 3043 2 villes dans 1 case
 #touquet paris plage écrit touquet dans effectifs_2016
 #a voir si / ecrit avec des espaces ou non
+#lorsqu'il y a des doublons, regarder le département dans effectifs, et comparer les valeurs codgeo, ne prendre que celle qui commence par le numéro du département
 #prochaine étape récupérer le v_commune pour 2016 et comparer, si c'est toujours la même chose alors s'arreter la 
 #concernant les différences liées à l'orthographe, je peux pas faire grand chose
 
@@ -107,15 +108,90 @@ effectifs_2016['Nom Ville'] = effectifs_2016['Nom Ville'].apply(transformer_vill
 CODGEO_NCC_COM = pd.DataFrame(CODGEO_com["NCC"],["COM"])
 doublons = CODGEO_NCC_COM.duplicated()
 print(doublons) #retourne false donc pas de doublons
+
 '''
+
+
+#1ere étape : trouver le nom du département pour la ville dans effectifs et créer une nouvelle colonne de ce type 60GOUVIEUX
+
+# Fonction pour extraire les numéros de département
+def extraire_numero_departement(texte):
+    # Utilise une expression régulière pour détecter les numéros de département entre parenthèses
+    match = re.search(r'\((\d{2})\)', texte)
+    #si match NULL (aucun numéro de département trouvé) alors ne rien renvoyer
+    if match:
+        #group(0) renvoie tout le motif trouvé, même avec les parenthèses or group(1) renvoie 1er sous groupe donc sans parentheses
+        #group indispensable car match contient des informations concernant le motif, pas le motif en lui-même
+        if match.group(1)[0] == "0" : #supprime le 0 dans 01 et renvoie seulement 1 pour correspondre avec les départements dans codgeo
+            return match.group(1)[1]
+        else : 
+            return match.group(1)
+    return None
+
+#il faut que la colonne avec les numéros de départements soit une string sinon pourra pas gérer les NULL
+effectifs_2016['Unnamed: 0'] = effectifs_2016['Unnamed: 0'].astype(str)
+
+# Parcourir chaque ligne de 1ère colonne (qui contient les noms de départements)
+#for ligne in effectifs_2016['Unnamed: 0']:
+
+#création de variable globale departement_actuel pour le début de la fonction : 1er département ligne 17 donc avant ca il n'y a rien
+departement_actuel = ""
+
+def ecrire_departements(ligne) : 
+    #accès à la variable globale
+    global departement_actuel
+    # Extraire le numéro de département, s'il y en a un
+    nouveau_departement = extraire_numero_departement(ligne)
+    if nouveau_departement:
+        departement_actuel = nouveau_departement  # Mettre à jour la variable
+        #print(f"Nouveau département détecté : {departement_actuel}")
+    #else:
+        #print(f"Ligne sans changement de département : {ligne}")
+    return departement_actuel
+
+
+
+#code testé fonctionnel 
+
+effectifs_2016['Numero Departement'] = effectifs_2016['Unnamed: 0'].apply(ecrire_departements)
+#print(effectifs_2016['Numero Departement'][150:200])
+#print(effectifs_2016['Nom Ville'][150:200])
+effectifs_2016['Numero Departement x Nom Ville'] = effectifs_2016['Numero Departement'] + effectifs_2016['Nom Ville']
+#print(effectifs_2016[50:100])
+#ca marche
+
+#maintenant faire de meme pour codgeo_com
+
+CODGEO_com['Numero Departement x Nom Ville'] = CODGEO_com['DEP'] + CODGEO_com['NCC']
+print(CODGEO_com['Numero Departement x Nom Ville'][10000:10050])
+
+
 
 dictionnaire_codgeo = CODGEO_com.set_index('NCC')['COM'].to_dict()
 #print(dictionnaire_codgeo)
 
-#attribution des codgeo dans une nouvelle colonne CODGEO : utilisation de la méthode map qui associe les cles du dico aux valeurs de Source\xa0: Ministère de l’intérieur (DLPAJ)
+#attribution des codgeo dans une nouvelle colonne CODGEO : utilisation de la méthode map qui associe les cles du dico aux valeurs de Nom Ville
 effectifs_2016['CODGEO'] = effectifs_2016['Nom Ville'].map(dictionnaire_codgeo)
 
-print(effectifs_2016['Nom Ville'][215:232])
+#recherche de doublons
+'''
+doublons = effectifs_2016[effectifs_2016['Nom Ville'].duplicated(keep=False)]
+
+for ville in doublons['Nom Ville'] : 
+    if ville != "NAN" :
+        print(ville)
+
+
+doublons_codgeo = CODGEO_com[CODGEO_com['NCC'].duplicated(keep=False)]
+
+for ville in doublons_codgeo['NCC'] : 
+    if ville != "NAN" :
+        print(ville)
+'''
+
+
+
+#print(effectifs_2016['Nom Ville'][215:232])
 #print(effectifs_2016[100:150])
 
 #effectifs_2016.to_csv("C:\\Users\\Guillaume\\Downloads\\effectifs_2016_test_codgeo8.csv", index=False)
