@@ -17,7 +17,7 @@ import unicodedata
 #7eme étape : créer dictionnaire avec clés = identifiants villes et valeurs = cogdeo
 #8eme étape : attribuer un codgeo à chaque ville de df_effectifs à l'aide du dictionnaire et de l'identifiant clé des communes
 #9eme étape : faire l'intervalle des villes disponibles dans df_data_delits et df_effectifs à l'aide du codgeo et de l'année
-#10eme étape : concaténer les différents df obtenus avec les différentes années en 1 seul df
+#10eme étape : concaténer les différents df obtenus avec les différentes années en 1 seul df pour les délits et les effectifs
 
 
 
@@ -194,32 +194,51 @@ for ville in doublons_codgeo['NCC'][0:100] :
 df_data_delits['CODGEO_2024'] = df_data_delits['CODGEO_2024'].astype(str)
 
 
-# Comparer les colonnes DEP et COMPARENT, et ne garder que les lignes où les valeurs sont identiques
-df_intersection_2016 = df_data_delits[
+# Comparer les colonnes DEP et COMPARENT, et ne garder que les lignes où les valeurs des codgeos sont identiques
+df_intersection_delits_2016 = df_data_delits[
     (df_data_delits['CODGEO_2024'].isin(df_effectifs_2016['CODGEO'])) &
     (df_data_delits['annee'] == 16)
 ]
-print(df_intersection_2016)
+# print(df_intersection_delits_2016)
 
-df_intersection_2017 = df_data_delits[
+df_intersection_delits_2017 = df_data_delits[
     (df_data_delits['CODGEO_2024'].isin(df_effectifs_2017['CODGEO'])) &
     (df_data_delits['annee'] == 17)
 ]
-print(df_intersection_2017)
+# print(df_intersection_delits_2017)
 
-df_intersection_2018 = df_data_delits[
+df_intersection_delits_2018 = df_data_delits[
     (df_data_delits['CODGEO_2024'].isin(df_effectifs_2018['CODGEO'])) &
     (df_data_delits['annee'] == 18)
 ]
-print(df_intersection_2018)
+# print(df_intersection_delits_2018)
 #df_intersection_2018.to_csv("C:\\Users\\Guillaume\\Downloads\\df_intersection_2018,1.csv", index=False)
 
+df_intersection_delits_2016.to_csv("data\\cleaned\\delits_2016.csv", index=False)
+df_intersection_delits_2017.to_csv("data\\cleaned\\delits_2017.csv", index=False)
+df_intersection_delits_2018.to_csv("data\\cleaned\\delits_2018.csv", index=False)
+
+df_intersection_effectifs_2016 = df_effectifs_2016[df_effectifs_2016['CODGEO'].isin(df_data_delits['CODGEO_2024'])]
+print("voici ce que je veux")
+print(df_intersection_effectifs_2016)
+print(df_effectifs_2016)
+#dupliquer pour les 2 autres années et créer effectifs_total
+df_intersection_effectifs_2017 = df_effectifs_2017[df_effectifs_2017['CODGEO'].isin(df_data_delits['CODGEO_2024'])]
+df_intersection_effectifs_2018 = df_effectifs_2018[df_effectifs_2016['CODGEO'].isin(df_data_delits['CODGEO_2024'])]
+
+# mettre en csv les données nettoyés dans cleaned
+df_intersection_effectifs_2016.to_csv("data\\cleaned\\effectifs_2016.csv", index=False)
+df_intersection_effectifs_2017.to_csv("data\\cleaned\\effectifs_2017.csv", index=False)
+df_intersection_effectifs_2018.to_csv("data\\cleaned\\effectifs_2018.csv", index=False)
 
 
 
+# #10eme étape : concaténer les différents df obtenus avec les différentes années en 1 seul df pour les délits et les effectifs
 
-#10eme étape : concaténer les différents df obtenus avec les différentes années en 1 seul df
+# # Concaténation des DataFrames le long des lignes (axis=0)
+delits_total = pd.concat([df_intersection_delits_2016, df_intersection_delits_2017, df_intersection_delits_2018], axis=0, ignore_index=True)
+# #effectifs_total.to_csv("C:\\Users\\Guillaume\\Downloads\\effectif_total2.csv", index=False)
+effectifs_total = pd.concat([df_intersection_effectifs_2016,df_intersection_effectifs_2017,df_intersection_effectifs_2018])
+print(effectifs_total)
 
-# Concaténation des DataFrames le long des lignes (axis=0)
-effectifs_total = pd.concat([df_intersection_2016, df_intersection_2017, df_intersection_2018], axis=0, ignore_index=True)
-#effectifs_total.to_csv("C:\\Users\\Guillaume\\Downloads\\effectif_total2.csv", index=False)
+
