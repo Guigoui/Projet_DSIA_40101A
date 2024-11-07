@@ -1,179 +1,107 @@
-# import pandas as pd
-# import plotly.graph_objects as go
-# import numpy as np
-# from plotly.io import write_html
-# import plotly.express as px
-# import plotly
-# import dash 
-# from dash import Dash, html, dcc, Input, Output
-
-
-
-# effectot = "C:\Users\romai\OneDrive\Documents\Esiee\E4\\effectif_total2.cv"
-
-
-
-# gapminder = px.data.gapminder()  # (1)
-# years = gapminder["year"].unique()
-# data = {year: gapminder.query("year == @year") for year in years}  # (2)
-
-
-# # Initialiser l'application Dash
-# app = Dash(__name__)  # (3)
-
-# # Layout de l'application
-# app.layout = html.Div(style={'display': 'flex', 'flexDirection': 'row'}, children=[
-#     # Colonne de gauche pour le graphique
-#     html.Div(style={'flex': '70%', 'padding': '20px'}, children=[
-#         html.H1(children='Espérance de vie vs PIB par habitant',
-#                 style={'textAlign': 'center', 'color': '#7FDBFF'}),  # (5)
-
-#         dcc.Dropdown(
-#             id='year-dropdown',
-#             options=[{'label': str(year), 'value': year} for year in years],
-#             value=2002,  # Valeur par défaut
-#         ),
-
-#         dcc.Graph(id='graph1'),  # Graphique dynamique
-#     ]),
-
-#     # Colonne de droite pour les boutons et le contenu
-#     html.Div(style={'flex': '30%', 'padding': '20px'}, children=[
-#         html.Button('Afficher la carte', id='map-button', n_clicks=0),
-#         html.Button('Afficher le texte', id='text-button', n_clicks=0),
-#         html.Button('Afficher un autre graphique', id='graph2-button', n_clicks=0),
-
-#         html.Div(id='dynamic-content', style={'marginTop': '20px'}),
-#     ])
-# ])
-
-# # Callback pour mettre à jour le graphique en fonction de l'année sélectionnée
-# @app.callback(
-#     Output('graph1', 'figure'),  # (1)
-#     Input('year-dropdown', 'value')  # (2)
-# )
-# def update_figure(input_value):  # (3)
-#     filtered_data = data[input_value]
-#     return px.scatter(filtered_data, x="gdpPercap", y="lifeExp",
-#                        color="continent", size="pop",
-#                        hover_name="country")  # (4)
-
-# # Callback pour afficher le contenu dynamique
-# @app.callback(
-#     Output('dynamic-content', 'children'),
-#     Input('map-button', 'n_clicks'),
-#     Input('text-button', 'n_clicks'),
-#     Input('graph2-button', 'n_clicks'),
-# )
-# def display_content(map_clicks, text_clicks, graph2_clicks):
-#     ctx = dash.callback_context
-
-#     if not ctx.triggered:
-#         return "Sélectionnez un bouton pour afficher du contenu."
-    
-#     button_id = ctx.triggered[0]['prop_id'].split('.')[0]
-
-#     if button_id == 'map-button':
-#         return dcc.Graph(figure=px.choropleth(gapminder, locations="iso_alpha", color="lifeExp", 
-#                                                hover_name="country", animation_frame="year", 
-#                                                title="Carte de l'espérance de vie"))
-#     elif button_id == 'text-button':
-#         return html.Div("Voici un texte explicatif sur les données.")
-#     elif button_id == 'graph2-button':
-#         return dcc.Graph(figure=px.bar(gapminder.query("year == 2007"), x="continent", y="pop",
-#                                         title="Population par continent en 2007"))
-
-# if __name__ == '__main__':
-#     app.run_server(debug=True)  # (8)
-
-
-
-
-
-
 import pandas as pd
-import plotly.graph_objects as go
-import numpy as np
-from plotly.io import write_html
 import plotly.express as px
-import dash 
-from dash import Dash, html, dcc, Input, Output
+from dash import Dash, dcc, html, Input, Output
 
-# Chemin d'accès vers le fichier CSV
-effectot_chemin = "C:\\Users\\romai\\OneDrive\\Documents\\Esiee\\E4\\effectif_total2.csv"
+# Charger les données pour les années 2016, 2017, et 2018
+effectifs_2016 = pd.read_csv('C:\\Users\\romai\OneDrive\\Documents\\Esiee\\E4\\Projet_DSIA_40101A\\data\\cleaned\\effectifs_2016.csv', encoding='ISO-8859-1', delimiter=';')
+effectifs_2017 = pd.read_csv('C:\\Users\\romai\OneDrive\\Documents\\Esiee\\E4\\Projet_DSIA_40101A\\data\\cleaned\\effectifs_2017.csv', encoding='ISO-8859-1', delimiter=';')
+effectifs_2018 = pd.read_csv('C:\\Users\\romai\OneDrive\\Documents\\Esiee\\E4\\Projet_DSIA_40101A\\data\\cleaned\\effectifs_2018.csv', encoding='ISO-8859-1', delimiter=';')
 
-# Chargement du fichier CSV dans un DataFrame
-effectot = pd.read_csv(effectot_chemin)
+#on ne prends pas en compte la ligne 1350
+#effectifs_2018 = pd.read_csv('C:\\Users\\romai\\OneDrive\\Documents\\Esiee\\E4\\Projet_DSIA_40101A\\data\\cleaned\\effectifs_2018.csv', encoding='ISO-8859-1', delimiter=';', skiprows=[1350])
 
-# Vérification des années uniques dans les données
-years = effectot["year"].unique()
-data = {year: effectot.query("year == @year") for year in years}
+# # Ajouter une colonne 'Année' à chaque DataFrame
+effectifs_2016['Année'] = 2016
+effectifs_2017['Année'] = 2017
+effectifs_2018['Année'] = 2018
+
+effectifs = pd.concat([effectifs_2016, effectifs_2017, effectifs_2018])
+
+# Préparer les données par département et par année
+effectifs_par_dept_annee = effectifs.groupby(["Numero Departement", "Année"]).agg({
+    "Nombre de policiers municipaux": "sum"
+}).reset_index()
+
+# Convertir les numéros de département en chaînes pour correspondre au format de Plotly
+effectifs_par_dept_annee["Numero Departement"] = effectifs_par_dept_annee["Numero Departement"].astype(str).str.zfill(2)
 
 # Initialiser l'application Dash
 app = Dash(__name__)
 
-# Layout de l'application
-app.layout = html.Div(style={'display': 'flex', 'flexDirection': 'row'}, children=[
-    # Colonne de gauche pour le graphique
-    html.Div(style={'flex': '70%', 'padding': '20px'}, children=[
-        html.H1(children='Espérance de vie vs PIB par habitant',
-                style={'textAlign': 'center', 'color': '#7FDBFF'}),
-
-        dcc.Dropdown(
-            id='year-dropdown',
-            options=[{'label': str(year), 'value': year} for year in years],
-            value=years[0],  # Valeur par défaut à la première année disponible
-        ),
-
-        dcc.Graph(id='graph1'),  # Graphique dynamique
+# Layout de l'application avec des onglets et sélection de l'année
+app.layout = html.Div(children=[
+    html.H1("Tableau de Bord des Effectifs de Police par Année", style={'textAlign': 'center', 'marginBottom': '20px'}),
+    dcc.Tabs(id="tabs", value='tab-intro', children=[
+        dcc.Tab(label='Introduction', value='tab-intro'),
+        dcc.Tab(label='Carte de France', value='tab-map'),
+        dcc.Tab(label='Évolution des Effectifs', value='tab-evolution'),  # Nouveau tab
     ]),
-
-    # Colonne de droite pour les boutons et le contenu
-    html.Div(style={'flex': '30%', 'padding': '20px'}, children=[
-        html.Button('Afficher la carte', id='map-button', n_clicks=0),
-        html.Button('Afficher le texte', id='text-button', n_clicks=0),
-        html.Button('Afficher un autre graphique', id='graph2-button', n_clicks=0),
-
-        html.Div(id='dynamic-content', style={'marginTop': '20px'}),
-    ])
+    html.Div(id='tabs-content')
 ])
 
-# Callback pour mettre à jour le graphique en fonction de l'année sélectionnée
-@app.callback(
-    Output('graph1', 'figure'),
-    Input('year-dropdown', 'value')
-)
-def update_figure(input_value):
-    filtered_data = data[input_value]
-    return px.scatter(filtered_data, x="gdpPercap", y="lifeExp",
-                       color="continent", size="pop",
-                       hover_name="country")
+# Callback pour le contenu des onglets
+@app.callback(Output('tabs-content', 'children'), Input('tabs', 'value'))
+def render_content(tab):
+    if tab == 'tab-intro':
+        return html.Div([
+            html.H2("Bienvenue sur le tableau de bord"),
+            html.P("Ce tableau de bord présente les effectifs de police municipaux par département en France de 2016 à 2018.")
+        ])
+    elif tab == 'tab-map':
+        # Carte de France des effectifs de police, avec une sélection d'année
+        fig = px.choropleth(
+            effectifs_par_dept_annee,
+            geojson="https://france-geojson.gregoiredavid.fr/repo/departements.geojson",
+            locations="Numero Departement",
+            featureidkey="properties.code",
+            color="Nombre de policiers municipaux",
+            hover_name="Numero Departement",
+            animation_frame="Année",  # Animation par année
+            title="Effectifs de Police Municipaux par Département (2016-2018)",
+            color_continuous_scale="Blues"
+        )
+        fig.update_geos(fitbounds="locations", visible=False)
+        return html.Div([
+            html.H2("Carte des Effectifs de Police par Département (2016-2018)"),
+            dcc.Graph(figure=fig)
+        ])
+    elif tab == 'tab-evolution':
+        # Graphique pour l'évolution des effectifs dans une ville
+        return html.Div([
+            html.H2("Évolution des Effectifs de Police Municipaux dans un Département"),
+            dcc.Dropdown(
+                id='departement-dropdown',
+                options=[
+                    {'label': f'Département {i}', 'value': str(i).zfill(2)} for i in range(1, 96)
+                ],
+                value='75',  # Valeur par défaut (Paris)
+                style={'width': '50%', 'margin': 'auto'}
+            ),
+            dcc.Graph(id='evolution-graph')
+        ])
 
-# Callback pour afficher le contenu dynamique
+# Callback pour mettre à jour le graphique en fonction du département sélectionné
 @app.callback(
-    Output('dynamic-content', 'children'),
-    Input('map-button', 'n_clicks'),
-    Input('text-button', 'n_clicks'),
-    Input('graph2-button', 'n_clicks'),
+    Output('evolution-graph', 'figure'),
+    Input('departement-dropdown', 'value')
 )
-def display_content(map_clicks, text_clicks, graph2_clicks):
-    ctx = dash.callback_context
-
-    if not ctx.triggered:
-        return "Sélectionnez un bouton pour afficher du contenu."
+def update_graph(departement):
+    # Filtrer les données pour le département sélectionné
+    dept_data = effectifs_par_dept_annee[effectifs_par_dept_annee["Numero Departement"] == departement]
     
-    button_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    # Créer le graphique
+    fig = px.bar(
+    dept_data,
+    x="Année",
+    y="Nombre de policiers municipaux",
+    title=f"Évolution des Effectifs de Police Municipaux dans le Département {departement}",
+     # Pour colorier les barres en fonction de l'année
+    labels={"Nombre de policiers municipaux": "Nombre de policiers municipaux", "Année": "Année"},
+    barmode="group"  # Affiche les barres côte à côte pour chaque année si besoin
+)
+    fig.update_layout(xaxis_title="Année", yaxis_title="Nombre de policiers municipaux")
+    return fig
 
-    if button_id == 'map-button':
-        return dcc.Graph(figure=px.choropleth(effectot, locations="iso_alpha", color="lifeExp", 
-                                               hover_name="country", animation_frame="year", 
-                                               title="Carte de l'espérance de vie"))
-    elif button_id == 'text-button':
-        return html.Div("Voici un texte explicatif sur les données.")
-    elif button_id == 'graph2-button':
-        return dcc.Graph(figure=px.bar(effectot.query("year == 2007"), x="continent", y="pop",
-                                        title="Population par continent en 2007"))
-
+# Lancement de l'application
 if __name__ == '__main__':
     app.run_server(debug=True)
-
