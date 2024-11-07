@@ -2,10 +2,16 @@ import pandas as pd
 import plotly.express as px
 from dash import Dash, dcc, html, Input, Output
 
-# Charger les données pour les années 2016, 2017, et 2018
+# Charger les données pour les années 2016, 2017, 2018 et total
 effectifs_2016 = pd.read_csv('data\\cleaned\\effectifs_2016.csv', delimiter=',')
 effectifs_2017 = pd.read_csv('data\\cleaned\\effectifs_2017.csv', delimiter=',')
 effectifs_2018 = pd.read_csv('data\\cleaned\\effectifs_2018.csv', delimiter=',')
+effectifs_total = pd.read_csv('data\\cleaned\\effectifs_total.csv', delimiter=',')
+
+delits_2016 = pd.read_csv('data\\cleaned\\delits_2016.csv', delimiter=',')
+delits_2017 = pd.read_csv('data\\cleaned\\delits_2017.csv', delimiter=',')
+delits_2018 = pd.read_csv('data\\cleaned\\delits_2018.csv', delimiter=',')
+delits_total = pd.read_csv('data\\cleaned\\delits_total.csv', delimiter=',')
 
 #on ne prends pas en compte la ligne 1350
 #effectifs_2018 = pd.read_csv('C:\\Users\\romai\\OneDrive\\Documents\\Esiee\\E4\\Projet_DSIA_40101A\\data\\cleaned\\effectifs_2018.csv', encoding='ISO-8859-1', delimiter=';', skiprows=[1350])
@@ -14,20 +20,20 @@ effectifs_2018 = pd.read_csv('data\\cleaned\\effectifs_2018.csv', delimiter=',')
 effectifs_2016['Année'] = 2016
 effectifs_2017['Année'] = 2017
 effectifs_2018['Année'] = 2018
-# print(effectifs_2016.columns)
-# print(effectifs_2017.columns)
+
+
 effectifs = pd.concat([effectifs_2016, effectifs_2017, effectifs_2018], ignore_index=True)
-print(effectifs.columns)
 # effectifs.to_csv("C:\\Users\\Guillaume\\Downloads\\effectifs2.csv", index=False)
 
 # Préparer les données par département et par année
-effectifs_par_dept_annee = effectifs.groupby(["Numero Departement", "Année"]).agg({
+effectifs_par_dept_annee = effectifs_total.groupby(["Numero Departement", "Année"]).agg({
     "Nombre de policiers municipaux": "sum"
 }).reset_index()
-# print(effectifs_par_dept_annee)
+
 # Convertir les numéros de département en chaînes pour correspondre au format de Plotly
 effectifs_par_dept_annee["Numero Departement"] = effectifs_par_dept_annee["Numero Departement"].astype(str).str.zfill(2)
 print(effectifs_par_dept_annee)
+
 # Initialiser l'application Dash
 app = Dash(__name__)
 

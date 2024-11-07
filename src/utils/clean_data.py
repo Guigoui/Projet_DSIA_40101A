@@ -214,15 +214,10 @@ df_intersection_delits_2018 = df_data_delits[
 # print(df_intersection_delits_2018)
 # df_intersection_2018.to_csv("C:\\Users\\Guillaume\\Downloads\\df_intersection_2018,1.csv", index=False)
 
-print(df_intersection_delits_2016.columns)
-print(df_intersection_delits_2017.columns)
-print(df_intersection_delits_2018.columns)
 
-
-
-# df_intersection_delits_2016.to_csv("data\\cleaned\\delits_2016.csv", index=False)
-# df_intersection_delits_2017.to_csv("data\\cleaned\\delits_2017.csv", index=False)
-# df_intersection_delits_2018.to_csv("data\\cleaned\\delits_2018.csv", index=False)
+df_intersection_delits_2016.to_csv("data\\cleaned\\delits_2016.csv", index=False)
+df_intersection_delits_2017.to_csv("data\\cleaned\\delits_2017.csv", index=False)
+df_intersection_delits_2018.to_csv("data\\cleaned\\delits_2018.csv", index=False)
 
 
 # faire la même intersection avec les effectifs
@@ -267,17 +262,24 @@ df_intersection_effectifs_2017.drop('Nombre de maîtres chiens de police municip
 df_intersection_effectifs_2018.drop('Inconnu', axis = 1)
 df_intersection_effectifs_2018.drop('Nombre de maîtres chiens de police municipale', axis = 1)
 
+# ajout de colonnes année pour avoir cette information après concaténation
+df_intersection_effectifs_2016['Année'] = 2016
+df_intersection_effectifs_2017['Année'] = 2017
+df_intersection_effectifs_2018['Année'] = 2018
+
 # mettre en csv les données nettoyées dans cleaned
-# df_intersection_effectifs_2016.to_csv("data\\cleaned\\effectifs_2016.csv", index=False)
-# df_intersection_effectifs_2017.to_csv("data\\cleaned\\effectifs_2017.csv", index=False)
-# df_intersection_effectifs_2018.to_csv("data\\cleaned\\effectifs_2018.csv", index=False)
+df_intersection_effectifs_2016.to_csv("data\\cleaned\\effectifs_2016.csv", index=False)
+df_intersection_effectifs_2017.to_csv("data\\cleaned\\effectifs_2017.csv", index=False)
+df_intersection_effectifs_2018.to_csv("data\\cleaned\\effectifs_2018.csv", index=False)
 
 # #10eme étape : concaténer les différents df obtenus avec les différentes années en 1 seul df pour les délits et les effectifs
 
+
 # # Concaténation des DataFrames le long des lignes (axis=0)
 delits_total = pd.concat([df_intersection_delits_2016, df_intersection_delits_2017, df_intersection_delits_2018], axis=0, ignore_index=True)
-# #effectifs_total.to_csv("C:\\Users\\Guillaume\\Downloads\\effectif_total2.csv", index=False)
-effectifs_total = pd.concat([df_intersection_effectifs_2016,df_intersection_effectifs_2017,df_intersection_effectifs_2018])
-# print(effectifs_total)
+delits_total.to_csv("data\\cleaned\\delits_total.csv", index=False)
+effectifs_total = pd.concat([df_intersection_effectifs_2016, df_intersection_effectifs_2017, df_intersection_effectifs_2018], ignore_index=True)
+effectifs_total.to_csv("data\\cleaned\\effectifs_total.csv", index=False)
+
 
 
