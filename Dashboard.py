@@ -3,10 +3,12 @@ import plotly.express as px
 from dash import Dash, dcc, html, Input, Output
 
 # Charger les données pour les années 2016, 2017, et 2018
-effectifs_2016 = pd.read_csv('C:\\Users\\romai\OneDrive\\Documents\\Esiee\\E4\\Projet_DSIA_40101A\\data\\cleaned\\effectifs_2016.csv', encoding='ISO-8859-1', delimiter=';')
-effectifs_2017 = pd.read_csv('C:\\Users\\romai\OneDrive\\Documents\\Esiee\\E4\\Projet_DSIA_40101A\\data\\cleaned\\effectifs_2017.csv', encoding='ISO-8859-1', delimiter=';')
-effectifs_2018 = pd.read_csv('C:\\Users\\romai\OneDrive\\Documents\\Esiee\\E4\\Projet_DSIA_40101A\\data\\cleaned\\effectifs_2018.csv', encoding='ISO-8859-1', delimiter=';')
-
+effectifs_2016 = pd.read_csv('C:\\Users\\romai\OneDrive\\Documents\\Esiee\\E4\\Projet_DSIA_40101A\\data\\cleaned\\effectifs_2016.csv', encoding='ISO-8859-1', delimiter=',')
+effectifs_2017 = pd.read_csv('C:\\Users\\romai\OneDrive\\Documents\\Esiee\\E4\\Projet_DSIA_40101A\\data\\cleaned\\effectifs_2017.csv', encoding='ISO-8859-1', delimiter=',')
+effectifs_2018 = pd.read_csv('C:\\Users\\romai\OneDrive\\Documents\\Esiee\\E4\\Projet_DSIA_40101A\\data\\cleaned\\effectifs_2018.csv', encoding='ISO-8859-1', delimiter=',')
+print(effectifs_2016)
+print(effectifs_2017)
+print(effectifs_2018)
 #on ne prends pas en compte la ligne 1350
 #effectifs_2018 = pd.read_csv('C:\\Users\\romai\\OneDrive\\Documents\\Esiee\\E4\\Projet_DSIA_40101A\\data\\cleaned\\effectifs_2018.csv', encoding='ISO-8859-1', delimiter=';', skiprows=[1350])
 
