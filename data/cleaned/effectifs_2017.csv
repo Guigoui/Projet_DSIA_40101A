@@ -1,4 +1,4 @@
-Dep,Nom Ville,Nombre d habitants de la commune intéressé,Nombre de policiers municipaux,Nombre d ASVP,Nombre de gardes-champêtres,Nombre de maÃ®tres chiens de police municipale,Nombre de chiens de patrouille de police municipale,Numero Departement,Numero Departement x Nom Ville,CODGEO
+Dep,Nom Ville,Nombre d habitants,Nombre de policiers municipaux,Nombre d ASVP,Nombre de gardes-champêtres,Nombre de maîtres chiens de police municipale,Nombre de chiens de patrouille de police municipale,Numero Departement,Numero Departement x Nom Ville,CODGEO
 Ain (01),AMBERIEU EN BUGEY,14127,7,0,0,0,0,01,01AMBERIEU EN BUGEY,1004
 nan,AMBRONAY,2615,0,1,0,0,0,01,01AMBRONAY,1007
 nan,ANGLEFORT,1133,0,1,0,0,0,01,01ANGLEFORT,1010
