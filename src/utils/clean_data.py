@@ -226,12 +226,29 @@ print(df_effectifs_2016)
 df_intersection_effectifs_2017 = df_effectifs_2017[df_effectifs_2017['CODGEO'].isin(df_data_delits['CODGEO_2024'])]
 df_intersection_effectifs_2018 = df_effectifs_2018[df_effectifs_2016['CODGEO'].isin(df_data_delits['CODGEO_2024'])]
 
-# mettre en csv les données nettoyés dans cleaned
+
+
+#renommer les colonnes pour plus de lisibilité : 
+print(df_intersection_effectifs_2016.columns)
+print(df_intersection_effectifs_2018.columns)
+new_columns_names_effectifs_2016 = ['Dep','Nom Ville','Nombre de policiers municipaux','Nombre d ASVP','Nombre de gardes-champêtres','Nombre d agents cynophiles','Nombre de chiens','Numero Departement','Numero Departement x Nom Ville','CODGEO']
+new_columns_names_effectifs_2017 = ['Dep','Nom Ville','Nombre d habitants de la commune intéressé','Nombre de policiers municipaux','Nombre d ASVP','Nombre de gardes-champêtres','Nombre de maÃ®tres chiens de police municipale','Nombre de chiens de patrouille de police municipale','Numero Departement','Numero Departement x Nom Ville','CODGEO']
+new_columns_names_effectifs_2018 = ['Dep','Nom Département','Inconnu','Nom des communes ou EPCI ayant un service de police municipale','Nombre d habitants de la commune','Nombre d agents de police municipale','Nombre d ASVP','Nombre de gardes-champêtres','Nombre de maîtres chiens de police municipale','Nombre de chiens de patrouille de police municipale','Numero Departement','Numero Departement x Nom Ville','CODGEO']
+
+
+
+
+print(len(df_intersection_effectifs_2016.columns))
+print(len(df_intersection_effectifs_2017.columns))
+print(len(df_intersection_effectifs_2018.columns))
+df_intersection_effectifs_2016.columns = new_columns_names_effectifs_2016
+df_intersection_effectifs_2017.columns = new_columns_names_effectifs_2017
+df_intersection_effectifs_2018.columns = new_columns_names_effectifs_2018
+
+# mettre en csv les données nettoyées dans cleaned
 df_intersection_effectifs_2016.to_csv("data\\cleaned\\effectifs_2016.csv", index=False)
 df_intersection_effectifs_2017.to_csv("data\\cleaned\\effectifs_2017.csv", index=False)
 df_intersection_effectifs_2018.to_csv("data\\cleaned\\effectifs_2018.csv", index=False)
-
-
 
 # #10eme étape : concaténer les différents df obtenus avec les différentes années en 1 seul df pour les délits et les effectifs
 
@@ -239,6 +256,6 @@ df_intersection_effectifs_2018.to_csv("data\\cleaned\\effectifs_2018.csv", index
 delits_total = pd.concat([df_intersection_delits_2016, df_intersection_delits_2017, df_intersection_delits_2018], axis=0, ignore_index=True)
 # #effectifs_total.to_csv("C:\\Users\\Guillaume\\Downloads\\effectif_total2.csv", index=False)
 effectifs_total = pd.concat([df_intersection_effectifs_2016,df_intersection_effectifs_2017,df_intersection_effectifs_2018])
-print(effectifs_total)
+# print(effectifs_total)
 
 
