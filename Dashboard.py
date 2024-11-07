@@ -2,30 +2,61 @@ import pandas as pd
 import plotly.express as px
 from dash import Dash, dcc, html, Input, Output
 
-# Charger les données pour les années 2016, 2017, et 2018
-effectifs_2016 = pd.read_csv('C:\\Users\\romai\OneDrive\\Documents\\Esiee\\E4\\Projet_DSIA_40101A\\data\\cleaned\\effectifs_2016.csv', encoding='ISO-8859-1', delimiter=',')
-effectifs_2017 = pd.read_csv('C:\\Users\\romai\OneDrive\\Documents\\Esiee\\E4\\Projet_DSIA_40101A\\data\\cleaned\\effectifs_2017.csv', encoding='ISO-8859-1', delimiter=',')
-effectifs_2018 = pd.read_csv('C:\\Users\\romai\OneDrive\\Documents\\Esiee\\E4\\Projet_DSIA_40101A\\data\\cleaned\\effectifs_2018.csv', encoding='ISO-8859-1', delimiter=',')
-print(effectifs_2016)
-print(effectifs_2017)
-print(effectifs_2018)
+# Charger les données pour les années 2016, 2017, 2018 et total
+effectifs_2016 = pd.read_csv('data\\cleaned\\effectifs_2016.csv', delimiter=',')
+effectifs_2017 = pd.read_csv('data\\cleaned\\effectifs_2017.csv', delimiter=',')
+effectifs_2018 = pd.read_csv('data\\cleaned\\effectifs_2018.csv', delimiter=',')
+effectifs_total = pd.read_csv('data\\cleaned\\effectifs_total.csv', delimiter=',')
+
+delits_2016 = pd.read_csv('data\\cleaned\\delits_2016.csv', delimiter=',')
+delits_2017 = pd.read_csv('data\\cleaned\\delits_2017.csv', delimiter=',')
+delits_2018 = pd.read_csv('data\\cleaned\\delits_2018.csv', delimiter=',')
+delits_total = pd.read_csv('data\\cleaned\\delits_total.csv', delimiter=',')
+
 #on ne prends pas en compte la ligne 1350
-#effectifs_2018 = pd.read_csv('C:\\Users\\romai\\OneDrive\\Documents\\Esiee\\E4\\Projet_DSIA_40101A\\data\\cleaned\\effectifs_2018.csv', encoding='ISO-8859-1', delimiter=';', skiprows=[1350])
 
-# # Ajouter une colonne 'Année' à chaque DataFrame
-effectifs_2016['Année'] = 2016
-effectifs_2017['Année'] = 2017
-effectifs_2018['Année'] = 2018
-
-effectifs = pd.concat([effectifs_2016, effectifs_2017, effectifs_2018])
 
 # Préparer les données par département et par année
-effectifs_par_dept_annee = effectifs.groupby(["Numero Departement", "Année"]).agg({
+effectifs_par_dept_annee = effectifs_total.groupby(["Numero Departement", "Année"]).agg({
     "Nombre de policiers municipaux": "sum"
 }).reset_index()
 
 # Convertir les numéros de département en chaînes pour correspondre au format de Plotly
 effectifs_par_dept_annee["Numero Departement"] = effectifs_par_dept_annee["Numero Departement"].astype(str).str.zfill(2)
+print(effectifs_par_dept_annee)
+
+
+
+# Supprimer les colonnes inutiles
+columns_to_drop = ['LOG','millPOP', 'millLOG', 'tauxpourmille', 'unitÃ©.de.compte', 'valeur.publiÃ©e']
+delits_total = delits_total.drop(columns=columns_to_drop, errors='ignore')
+
+
+
+# Vérifier les doublons dans les colonnes 'CODGEO_2024' et 'classe'
+print(f"Nombre de doublons dans les colonnes 'CODGEO_2024' et 'classe' : {delits_total[['CODGEO_2024', 'classe']].duplicated().sum()}")
+
+
+
+# Réorganiser le tableau avec CODGEO_2024 comme index et les délits en colonnes
+delits_pivot = delits_total.pivot_table(index='CODGEO_2024', columns='classe', values='faits', aggfunc='first')
+
+# Remplir les valeurs manquantes avec 0
+delits_pivot = delits_pivot.fillna(0)
+
+# Vérifier et supprimer les index dupliqués si nécessaire
+delits_pivot = delits_pivot.loc[~delits_pivot.index.duplicated(keep='first')]
+
+# Sauvegarder le nouveau tableau
+output_path = 'C:\\Users\\romai\OneDrive\\Documents\\Esiee\\E4\\Projet_DSIA_40101A\\data\\cleaned\\delits_transforme2.csv'  # Chemin pour le fichier de sortie
+delits_pivot.to_csv(output_path)
+
+print("Transformation terminée. Tableau enregistré sous 'delits_transforme2.csv'.")
+
+
+
+
+
 
 # Initialiser l'application Dash
 app = Dash(__name__)
@@ -76,7 +107,7 @@ def render_content(tab):
                 options=[
                     {'label': f'Département {i}', 'value': str(i).zfill(2)} for i in range(1, 96)
                 ],
-                value='75',  # Valeur par défaut (Paris)
+                value='93',  # Valeur par défaut (Paris)
                 style={'width': '50%', 'margin': 'auto'}
             ),
             dcc.Graph(id='evolution-graph')
