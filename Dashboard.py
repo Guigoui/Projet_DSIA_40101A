@@ -8,128 +8,21 @@ effectifs_2016 = pd.read_csv('data\\cleaned\\effectifs_2016.csv', delimiter=',')
 effectifs_2017 = pd.read_csv('data\\cleaned\\effectifs_2017.csv', delimiter=',')
 effectifs_2018 = pd.read_csv('data\\cleaned\\effectifs_2018.csv', delimiter=',')
 effectifs_total = pd.read_csv('data\\cleaned\\effectifs_total.csv', delimiter=',')
+effectifs_par_dept_annee = pd.read_csv('data\\cleaned\\effectifs_par_dept_annee.csv', delimiter=',')
+
 
 delits_2016 = pd.read_csv('data\\cleaned\\delits_2016.csv', delimiter=',')
 delits_2017 = pd.read_csv('data\\cleaned\\delits_2017.csv', delimiter=',')
 delits_2018 = pd.read_csv('data\\cleaned\\delits_2018.csv', delimiter=',')
 delits_total = pd.read_csv('data\\cleaned\\delits_total.csv', delimiter=',')
-
-#on ne prends pas en compte la ligne 1350
-
-# converti ces colonnes en ignorant les erreurs (de object à float)
-effectifs_total["Nombre d ASVP"] = pd.to_numeric(effectifs_total["Nombre d ASVP"], errors="coerce")
-effectifs_total["Nombre d habitants"] = pd.to_numeric(effectifs_total["Nombre d habitants"], errors="coerce")
+delits_par_dept_annee = pd.read_csv('data\\cleaned\\delits_par_dept_annee.csv', delimiter=',')
 
 
-
-
-# Remplir les valeurs manquantes avec 0
-effectifs_2016 = effectifs_2016.fillna(0)
-effectifs_2017 = effectifs_2017.fillna(0)
-effectifs_2018 = effectifs_2018.fillna(0)
-effectifs_total = effectifs_total.fillna(0)
-
-effectifs_total_cols = effectifs_total[['Nombre de policiers municipaux', 'Nombre d ASVP',
-       'Nombre de gardes-champêtres', 'Nombre d agents cynophiles',
-       'Nombre de chiens de patrouille de police municipale','Nombre de maîtres chiens de police municipale']]
-
-# converti tous les types des colonnes en int64
-effectifs_total_cols = effectifs_total_cols.astype({col: 'int64' for col in effectifs_total_cols.select_dtypes(include='float64').columns})
-
-
-# print(effectifs_total_cols.dtypes)
-# Préparer les données par département et par année
-effectifs_par_dept_annee = effectifs_total.groupby(["Numero Departement", "Année"]).agg({
-    col: "sum" for col in effectifs_total_cols.columns
-}).reset_index()
-
-# print(effectifs_par_dept_annee.columns)
-#faire la somme sur la ligne : 
-effectifs_par_dept_annee['somme_ligne'] = effectifs_par_dept_annee.drop(['Numero Departement', 'Année'], axis=1).sum(axis=1)
-
-
-# print(effectifs_par_dept_annee)
-# effectifs_par_dept_annee.to_csv("data\\cleaned\\effectifs_par_dept_annee.csv", index=False)
-
-
-# Convertir les numéros de département en chaînes pour correspondre au format de Plotly
-effectifs_par_dept_annee["Numero Departement"] = effectifs_par_dept_annee["Numero Departement"].astype(str).str.zfill(2)
-# print(effectifs_par_dept_annee)
-
-
-# Vérifier les doublons dans les colonnes 'CODGEO_2024' et 'classe'
-# print(f"Nombre de doublons dans les colonnes 'CODGEO_2024' et 'classe' : {delits_total[['CODGEO_2024', 'classe']].duplicated().sum()}")
-# print(delits_2016)
-
-
-# Réorganiser le tableau avec CODGEO_2024, POP et année comme index et les délits en colonnes
-delits_pivot_2016 = delits_2016.pivot_table(index=['departement','CODGEO_2024','POP','annee'], columns='classe', values='faits', aggfunc='first')
-delits_pivot_2017 = delits_2017.pivot_table(index=['departement','CODGEO_2024','POP','annee'], columns='classe', values='faits', aggfunc='first')
-delits_pivot_2018 = delits_2018.pivot_table(index=['departement','CODGEO_2024','POP','annee'], columns='classe', values='faits', aggfunc='first')
-
-
-#créer des colonnes avec les index
-delits_pivot_2016 = delits_pivot_2016.reset_index()
-delits_pivot_2017 = delits_pivot_2017.reset_index()
-delits_pivot_2018 = delits_pivot_2018.reset_index()
-
-# Remplir les valeurs manquantes avec 0
-delits_pivot_2016 = delits_pivot_2016.fillna(0)
-delits_pivot_2017 = delits_pivot_2017.fillna(0)
-delits_pivot_2018 = delits_pivot_2018.fillna(0)
-
-
-
-
-# print(delits_pivot_2016)
-# print(delits_pivot_2017)
-# print(delits_pivot_2018)
-#conversion des types (pas forcément nécessaire)
-delits_pivot_2016 = delits_pivot_2016.astype({col: 'int64' for col in delits_pivot_2016.select_dtypes(include='float64').columns})
-delits_pivot_2017 = delits_pivot_2017.astype({col: 'int64' for col in delits_pivot_2017.select_dtypes(include='float64').columns})
-delits_pivot_2018 = delits_pivot_2018.astype({col: 'int64' for col in delits_pivot_2018.select_dtypes(include='float64').columns})
-
-
-delits_pivot_total = pd.concat([delits_pivot_2016,delits_pivot_2017,delits_pivot_2018],ignore_index=True)
-# print(delits_pivot_total.columns)
-
-delits_pivot_total_cols = delits_pivot_total[['Autres coups et blessures volontaires','Cambriolages de logement',
-       'Coups et blessures volontaires',
-       'Coups et blessures volontaires intrafamiliaux',
-       'Destructions et dégradations volontaires', 'Trafic de stupéfiants',
-       'Usage de stupéfiants', 'Violences sexuelles', 'Vols avec armes',
-       'Vols d\'accessoires sur véhicules', 'Vols dans les véhicules',
-       'Vols de véhicules', 'Vols sans violence contre des personnes',
-       'Vols violents sans arme']]
-
-# print(delits_pivot_total_cols.columns)
-delits_par_dept_annee = delits_pivot_total.groupby(["departement", "annee"]).agg({
-    col: "sum" for col in delits_pivot_total_cols.columns
-}).reset_index()
-
-# faire la somme sur la ligne pour déterminer l'ensemble des délits
-delits_par_dept_annee['somme_ligne'] = delits_par_dept_annee.drop(['departement', 'annee'], axis=1).sum(axis=1)
-print(delits_par_dept_annee)
-# delits_par_dept_annee.to_csv("data\\cleaned\\delits_par_dept_annee.csv", index=False)
-
-
-
-# Convertir les numéros de département en chaînes pour correspondre au format de Plotly
-delits_par_dept_annee["departement"] = delits_par_dept_annee["departement"].astype(str).str.zfill(2)
-
-# print(delits_pivot_2016.dtypes)
-# print(delits_pivot_2017.dtypes)
-# print(delits_pivot_2018.dtypes)
-# print(delits_pivot_total)
-# print(delits_par_dept_annee)
-
-
-
-
-
-
-
-
+# cas spécial pour les département à 1 chiffre, les écrire sous forme 01 au lieu de 1 (fait tjrs ca à l'ouverture du csv surement problème de type problème à régler si assez de temps)
+effectifs_par_dept_annee['Numero Departement'] = effectifs_par_dept_annee['Numero Departement'].apply(lambda x: str(x).zfill(2))
+delits_par_dept_annee['departement'] = delits_par_dept_annee['departement'].apply(lambda x: str(x).zfill(2))
+print('test')
+print(effectifs_par_dept_annee["Numero Departement"].unique())
 
 
 
@@ -143,7 +36,7 @@ app.layout = html.Div(children=[
     dcc.Tabs(id="tabs", value='tab-intro', children=[
         dcc.Tab(label='Introduction', value='tab-intro'),
         dcc.Tab(label='Carte de France', value='tab-map'),
-        dcc.Tab(label='Évolution des Effectifs', value='tab-evolution'),  # Nouveau tab
+        dcc.Tab(label='Évolution des Effectifs', value='tab-evolution'),  
     ]),
     html.Div(id='tabs-content')
 ])

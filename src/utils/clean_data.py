@@ -18,6 +18,7 @@ import unicodedata
 # 8eme étape : attribuer un codgeo à chaque ville de df_effectifs à l'aide du dictionnaire et de l'identifiant clé des communes
 # 9eme étape : faire l'intervalle des villes disponibles dans df_data_delits et df_effectifs à l'aide du codgeo et de l'année
 # 10eme étape : concaténer les différents df obtenus avec les différentes années en 1 seul df pour les délits et les effectifs
+# 11eme étape : créer différents df pour rendre les données plus pertinentes et utilisables
 
 
 
@@ -195,7 +196,8 @@ df_data_delits['CODGEO_2024'] = df_data_delits['CODGEO_2024'].astype(str)
 # créer une nouvelle colonne departement pour stocker l'information du département
 # lambda texte sert à spécifier que df_data_delits['CODGEO_2024'] est le parametre "texte" de la fonction et 4 est précisé comme chiffre
 df_data_delits['departement'] = df_data_delits['CODGEO_2024'].apply(lambda texte: transform_dep(texte, 4))
-print(df_data_delits)
+# print(df_data_delits)
+
 # Comparer les colonnes DEP et COMPARENT, et ne garder que les lignes où les valeurs des codgeos sont identiques
 df_intersection_delits_2016 = df_data_delits[
     (df_data_delits['CODGEO_2024'].isin(df_effectifs_2016['CODGEO'])) &
@@ -215,6 +217,11 @@ df_intersection_delits_2018 = df_data_delits[
 ]
 # print(df_intersection_delits_2018)
 # df_intersection_2018.to_csv("C:\\Users\\Guillaume\\Downloads\\df_intersection_2018,1.csv", index=False)
+
+# Remplir les valeurs manquantes avec 0
+df_intersection_delits_2016 = df_intersection_delits_2016.fillna(0)
+df_intersection_delits_2017 = df_intersection_delits_2017.fillna(0)
+df_intersection_delits_2018 = df_intersection_delits_2018.fillna(0)
 
 
 df_intersection_delits_2016.to_csv("data\\cleaned\\delits_2016.csv", index=False)
@@ -269,6 +276,12 @@ df_intersection_effectifs_2016['Année'] = 2016
 df_intersection_effectifs_2017['Année'] = 2017
 df_intersection_effectifs_2018['Année'] = 2018
 
+
+# Remplir les valeurs manquantes avec 0
+df_intersection_effectifs_2016 = df_intersection_effectifs_2016.fillna(0)
+df_intersection_effectifs_2017 = df_intersection_effectifs_2017.fillna(0)
+df_intersection_effectifs_2018 = df_intersection_effectifs_2018.fillna(0)
+
 # mettre en csv les données nettoyées dans cleaned
 df_intersection_effectifs_2016.to_csv("data\\cleaned\\effectifs_2016.csv", index=False)
 df_intersection_effectifs_2017.to_csv("data\\cleaned\\effectifs_2017.csv", index=False)
@@ -279,9 +292,107 @@ df_intersection_effectifs_2018.to_csv("data\\cleaned\\effectifs_2018.csv", index
 
 # # Concaténation des DataFrames le long des lignes (axis=0)
 delits_total = pd.concat([df_intersection_delits_2016, df_intersection_delits_2017, df_intersection_delits_2018], axis=0, ignore_index=True)
-delits_total.to_csv("data\\cleaned\\delits_total.csv", index=False)
 effectifs_total = pd.concat([df_intersection_effectifs_2016, df_intersection_effectifs_2017, df_intersection_effectifs_2018], ignore_index=True)
+
+
+# 11eme étape : créer différents df pour rendre les données plus pertinentes et utilisables
+
+
+effectifs_total_cols = effectifs_total[['Nombre de policiers municipaux', 'Nombre d ASVP',
+       'Nombre de gardes-champêtres', 'Nombre d agents cynophiles',
+       'Nombre de chiens de patrouille de police municipale','Nombre de maîtres chiens de police municipale']]
+
+
+# converti ces colonnes en ignorant les erreurs (de object à float)
+effectifs_total[effectifs_total_cols.columns] = effectifs_total_cols.apply(pd.to_numeric, errors="coerce")
+effectifs_total["Nombre d habitants"] = pd.to_numeric(effectifs_total["Nombre d habitants"], errors="coerce")
+
+
+# Remplir les valeurs manquantes avec 0
+effectifs_2016 = df_intersection_effectifs_2016.fillna(0)
+effectifs_2017 = df_intersection_effectifs_2017.fillna(0)
+effectifs_2018 = df_intersection_effectifs_2018.fillna(0)
+effectifs_total = effectifs_total.fillna(0)
+
+effectifs_total_cols = effectifs_total[['Nombre de policiers municipaux', 'Nombre d ASVP',
+       'Nombre de gardes-champêtres', 'Nombre d agents cynophiles',
+       'Nombre de chiens de patrouille de police municipale','Nombre de maîtres chiens de police municipale']]
+
+
+# converti tous les types des colonnes en int64
+effectifs_total_cols = effectifs_total_cols.astype({col: 'int64' for col in effectifs_total_cols.select_dtypes(include='float64').columns})
+print(effectifs_total_cols.dtypes)
+
+# Préparer les données par département et par année
+effectifs_par_dept_annee = effectifs_total.groupby(["Numero Departement", "Année"]).agg({
+    col: "sum" for col in effectifs_total_cols.columns
+}).reset_index()
+
+
+# faire la somme sur la ligne : 
+effectifs_par_dept_annee['somme_ligne'] = effectifs_par_dept_annee.drop(['Numero Departement', 'Année'], axis=1).sum(axis=1)
+
+
+# Convertir les numéros de département en chaînes pour correspondre au format de Plotly
+effectifs_par_dept_annee["Numero Departement"] = effectifs_par_dept_annee["Numero Departement"].astype(str).str.zfill(2)
+
+
+
 effectifs_total.to_csv("data\\cleaned\\effectifs_total.csv", index=False)
+effectifs_par_dept_annee.to_csv("data\\cleaned\\effectifs_par_dept_annee.csv", index=False)
 
 
+# Réorganiser le tableau avec CODGEO_2024, POP et année comme index et les délits en colonnes
+delits_pivot_2016 = df_intersection_delits_2016.pivot_table(index=['departement','CODGEO_2024','POP','annee'], columns='classe', values='faits', aggfunc='first')
+delits_pivot_2017 = df_intersection_delits_2017.pivot_table(index=['departement','CODGEO_2024','POP','annee'], columns='classe', values='faits', aggfunc='first')
+delits_pivot_2018 = df_intersection_delits_2018.pivot_table(index=['departement','CODGEO_2024','POP','annee'], columns='classe', values='faits', aggfunc='first')
 
+
+# créer des colonnes avec les index
+delits_pivot_2016 = delits_pivot_2016.reset_index()
+delits_pivot_2017 = delits_pivot_2017.reset_index()
+delits_pivot_2018 = delits_pivot_2018.reset_index()
+
+
+# Remplir les valeurs manquantes avec 0
+delits_pivot_2016 = delits_pivot_2016.fillna(0)
+delits_pivot_2017 = delits_pivot_2017.fillna(0)
+delits_pivot_2018 = delits_pivot_2018.fillna(0)
+
+
+# conversion des types (pas forcément nécessaire)
+delits_pivot_2016 = delits_pivot_2016.astype({col: 'int64' for col in delits_pivot_2016.select_dtypes(include='float64').columns})
+delits_pivot_2017 = delits_pivot_2017.astype({col: 'int64' for col in delits_pivot_2017.select_dtypes(include='float64').columns})
+delits_pivot_2018 = delits_pivot_2018.astype({col: 'int64' for col in delits_pivot_2018.select_dtypes(include='float64').columns})
+
+
+# concaténation des années
+delits_pivot_total = pd.concat([delits_pivot_2016,delits_pivot_2017,delits_pivot_2018],ignore_index=True)
+
+
+# rassembler les colonnes qui contiennent les informations pertinentes (nombre de faits et classes)
+delits_pivot_total_cols = delits_pivot_total[['Autres coups et blessures volontaires','Cambriolages de logement',
+       'Coups et blessures volontaires',
+       'Coups et blessures volontaires intrafamiliaux',
+       'Destructions et dégradations volontaires', 'Trafic de stupéfiants',
+       'Usage de stupéfiants', 'Violences sexuelles', 'Vols avec armes',
+       'Vols d\'accessoires sur véhicules', 'Vols dans les véhicules',
+       'Vols de véhicules', 'Vols sans violence contre des personnes',
+       'Vols violents sans arme']]
+
+
+delits_par_dept_annee = delits_pivot_total.groupby(["departement", "annee"]).agg({
+    col: "sum" for col in delits_pivot_total_cols.columns
+}).reset_index()
+
+
+# faire la somme sur la ligne pour déterminer l'ensemble des délits
+delits_par_dept_annee['somme_ligne'] = delits_par_dept_annee.drop(['departement', 'annee'], axis=1).sum(axis=1)
+
+
+# Convertir les numéros de département en chaînes pour correspondre au format de Plotly
+delits_par_dept_annee["departement"] = delits_par_dept_annee["departement"].astype(str).str.zfill(2)
+
+
+delits_total.to_csv("data\\cleaned\\delits_total.csv", index=False)
+delits_par_dept_annee.to_csv("data\\cleaned\\delits_par_dept_annee.csv", index=False)
