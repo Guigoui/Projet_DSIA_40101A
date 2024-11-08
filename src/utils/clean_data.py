@@ -114,9 +114,8 @@ df_CODGEO_com['COM'] = df_CODGEO_com['COM'].apply(suppr_zero)
 for index, row in df_CODGEO_com.iterrows():
     if row['COMPARENT'] != "nan": 
         #Mettre à jour le df directement sinon modifications pas prise en compte    
-        df_CODGEO_com.at[index, 'DEP'] = transform_dep(row['COMPARENT'])  
+        df_CODGEO_com.at[index, 'DEP'] = transform_dep(row['COMPARENT'],6)  
         #print(row[''])
-
 
 
 
@@ -193,7 +192,10 @@ for ville in doublons_codgeo['NCC'][0:100] :
 # print(data_delits.columns)
 df_data_delits['CODGEO_2024'] = df_data_delits['CODGEO_2024'].astype(str)
 
-
+# créer une nouvelle colonne departement pour stocker l'information du département
+# lambda texte sert à spécifier que df_data_delits['CODGEO_2024'] est le parametre "texte" de la fonction et 4 est précisé comme chiffre
+df_data_delits['departement'] = df_data_delits['CODGEO_2024'].apply(lambda texte: transform_dep(texte, 4))
+print(df_data_delits)
 # Comparer les colonnes DEP et COMPARENT, et ne garder que les lignes où les valeurs des codgeos sont identiques
 df_intersection_delits_2016 = df_data_delits[
     (df_data_delits['CODGEO_2024'].isin(df_effectifs_2016['CODGEO'])) &
@@ -272,7 +274,7 @@ df_intersection_effectifs_2016.to_csv("data\\cleaned\\effectifs_2016.csv", index
 df_intersection_effectifs_2017.to_csv("data\\cleaned\\effectifs_2017.csv", index=False)
 df_intersection_effectifs_2018.to_csv("data\\cleaned\\effectifs_2018.csv", index=False)
 
-# #10eme étape : concaténer les différents df obtenus avec les différentes années en 1 seul df pour les délits et les effectifs
+# 10eme étape : concaténer les différents df obtenus avec les différentes années en 1 seul df pour les délits et les effectifs
 
 
 # # Concaténation des DataFrames le long des lignes (axis=0)

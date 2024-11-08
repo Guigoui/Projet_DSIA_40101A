@@ -81,14 +81,14 @@ def ecrire_departements(ligne) :
 
 
 
-#récupère 1er chiffre de comparent
-def transform_dep (texte) : 
+#récupère 1er chiffre de comparent avec string en parametre et nombres de chiffres dans la string
+def transform_dep (texte,nb_chiffre) : 
     #texte = str(texte)
     #vérifier si premier element est un chiffre
     if texte[0].isdigit():
         #si 4 nombre = 4 chiffres alors département de type unité 01,02,03 etc
         #print(texte)
-        if len(texte) == 6 :
+        if len(texte) == nb_chiffre :
             return "0" + texte[0]
         #sinon département = dizaine
         else : 

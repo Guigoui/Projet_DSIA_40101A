@@ -2,6 +2,7 @@ import pandas as pd
 import plotly.express as px
 from dash import Dash, dcc, html, Input, Output
 
+
 # Charger les données pour les années 2016, 2017, 2018 et total
 effectifs_2016 = pd.read_csv('data\\cleaned\\effectifs_2016.csv', delimiter=',')
 effectifs_2017 = pd.read_csv('data\\cleaned\\effectifs_2017.csv', delimiter=',')
@@ -23,35 +24,61 @@ effectifs_par_dept_annee = effectifs_total.groupby(["Numero Departement", "Anné
 
 # Convertir les numéros de département en chaînes pour correspondre au format de Plotly
 effectifs_par_dept_annee["Numero Departement"] = effectifs_par_dept_annee["Numero Departement"].astype(str).str.zfill(2)
-print(effectifs_par_dept_annee)
-
-
-
-# Supprimer les colonnes inutiles
-columns_to_drop = ['LOG','millPOP', 'millLOG', 'tauxpourmille', 'unitÃ©.de.compte', 'valeur.publiÃ©e']
-delits_total = delits_total.drop(columns=columns_to_drop, errors='ignore')
-
+# print(effectifs_par_dept_annee)
 
 
 # Vérifier les doublons dans les colonnes 'CODGEO_2024' et 'classe'
-print(f"Nombre de doublons dans les colonnes 'CODGEO_2024' et 'classe' : {delits_total[['CODGEO_2024', 'classe']].duplicated().sum()}")
+# print(f"Nombre de doublons dans les colonnes 'CODGEO_2024' et 'classe' : {delits_total[['CODGEO_2024', 'classe']].duplicated().sum()}")
+# print(delits_2016)
 
 
+# Réorganiser le tableau avec CODGEO_2024, POP et année comme index et les délits en colonnes
+delits_pivot_2016 = delits_2016.pivot_table(index=['departement','CODGEO_2024','POP','annee'], columns='classe', values='faits', aggfunc='first')
+delits_pivot_2017 = delits_2017.pivot_table(index=['departement','CODGEO_2024','POP','annee'], columns='classe', values='faits', aggfunc='first')
+delits_pivot_2018 = delits_2018.pivot_table(index=['departement','CODGEO_2024','POP','annee'], columns='classe', values='faits', aggfunc='first')
 
-# Réorganiser le tableau avec CODGEO_2024 comme index et les délits en colonnes
-delits_pivot = delits_total.pivot_table(index='CODGEO_2024', columns='classe', values='faits', aggfunc='first')
+#créer des colonnes avec les index
+delits_pivot_2016 = delits_pivot_2016.reset_index()
+delits_pivot_2017 = delits_pivot_2017.reset_index()
+delits_pivot_2018 = delits_pivot_2018.reset_index()
 
 # Remplir les valeurs manquantes avec 0
-delits_pivot = delits_pivot.fillna(0)
+delits_pivot_2016 = delits_pivot_2016.fillna(0)
+delits_pivot_2017 = delits_pivot_2017.fillna(0)
+delits_pivot_2018 = delits_pivot_2018.fillna(0)
 
-# Vérifier et supprimer les index dupliqués si nécessaire
-delits_pivot = delits_pivot.loc[~delits_pivot.index.duplicated(keep='first')]
+
+
+
+# print(delits_pivot_2016)
+# print(delits_pivot_2017)
+# print(delits_pivot_2018)
+#conversion des types (pas forcément nécessaire)
+delits_pivot_2016 = delits_pivot_2016.astype({col: 'int64' for col in delits_pivot_2016.select_dtypes(include='float64').columns})
+delits_pivot_2017 = delits_pivot_2017.astype({col: 'int64' for col in delits_pivot_2017.select_dtypes(include='float64').columns})
+delits_pivot_2018 = delits_pivot_2018.astype({col: 'int64' for col in delits_pivot_2018.select_dtypes(include='float64').columns})
+
+
+delits_pivot_total = pd.concat([delits_pivot_2016,delits_pivot_2017,delits_pivot_2018],ignore_index=True)
+delits_par_dept_annee = delits_pivot_total.groupby(["departement", "annee"]).agg({
+    "Nombre de policiers municipaux": "sum"
+}).reset_index()
+
+
+# print(delits_pivot_2016.dtypes)
+# print(delits_pivot_2017.dtypes)
+# print(delits_pivot_2018.dtypes)
+print(delits_pivot_total)
+print(delits_par_dept_annee)
+
+
+
+# print(delits_pivot)
 
 # Sauvegarder le nouveau tableau
 output_path = 'C:\\Users\\romai\OneDrive\\Documents\\Esiee\\E4\\Projet_DSIA_40101A\\data\\cleaned\\delits_transforme2.csv'  # Chemin pour le fichier de sortie
-delits_pivot.to_csv(output_path)
+# delits_pivot.to_csv(output_path)
 
-print("Transformation terminée. Tableau enregistré sous 'delits_transforme2.csv'.")
 
 
 
