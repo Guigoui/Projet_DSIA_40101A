@@ -54,6 +54,62 @@ Il faudra aussi avoir un compte sur Git-Hub
 
 [Page d'acceuil Github](https://github.com/)
 
+## 2 - Exportation du projet 
+
+
+### Cloner le répertoire sur sa machine :
+Pour ce faire, ouvrez le ‘Git Bash’ (vous pouvez le chercher depuis la barre
+de recherche windows). Rentrez la commande suivante dans ‘Git Bash’ :
+git clone https://git.esiee.fr/carangeh/carangeot_sali-orliange_pythonds_e4
+
+
+
+### Installer les packages nécessaires au programme :
+
+Pour ce faire, ouvrez l' ’Invite de Commandes’ (vous pouvez la chercher
+depuis la barre de recherche windows). À l’aide de la commande ‘cd’ rejoignez
+votre dossier ‘CARANGEOT_SALI-ORLIANGE_PYTHONDS_E4’ qui correspond au dossier
+cloné de Git.
+
+Enfin, depuis ce dossier, rentrez la commande suivante : 
+python -m pip install -r requirements.txt
+
+## 3 - Ouvrir le Dashboard 
+
+
+Après avoir suivie tous les étapes précedentes il vous suffit de rentrer la commande suivante  :
+
+```
+*python Dashboard.py*
+```
+
+Vous obtiendrez ensuite:
+
+![image](https://github.com/user-attachments/assets/4a72750f-7073-4ec3-b40f-f7d8777f0cbc)
+
+cliquez sur http://127.0.0.1:8050/
+
+et vous voilà sur notre dashboard.
+
+## 4 - Utilisation du Dashboard 
+
+
+
+
+
+# Guide du developpeur 
+
+## Introduction 
+
+Ce guide du developpeur est concue pour faciliter l'ajout de nouvelles fonctionnalités et de son amélioration.
+
+## Organisation du code 
+
+Notre code est structuré en plusieur fichiers :
+
+
+
+
 
 
 
