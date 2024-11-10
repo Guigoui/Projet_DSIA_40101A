@@ -1,357 +1,264 @@
 import pandas as pd
-import re
-import unicodedata
+import plotly.express as px
+from dash import Dash, dcc, html, Input, Output
 
 
-#stockage des chemins des csv dans des strings
-
-effectifs_2016_chemin  = "C:\\Users\\Guillaume\\Desktop\\Projet DSIA 40101A\\Effectifs_police_municipale_au_31_decembre_2016.csv"
-effectifs_2017_chemin = "C:\\Users\\Guillaume\\Desktop\\Projet DSIA 40101A\\effectifs-police-municipale-2017.csv"
-effectifs_2018_chemin = "C:\\Users\\Guillaume\\Desktop\\Projet DSIA 40101A\\effectifs-police-municipale-2018.csv"
-
-data_delits_chemin = "C:\\Users\\Guillaume\\Downloads\\donnee-data.gouv-2023-geographie2024-produit-le2024-07-05 (1).csv\\donnee-data.gouv-2023-geographie2024-produit-le2024-07-05 (1).csv"
-
-CODGEO_communes_chemin = "C:\\Users\\Guillaume\\Desktop\\Projet DSIA 40101A\\v_commune_2024.csv"
-
-
+# Charger les données 
+effectifs_total = pd.read_csv('data\\cleaned\\effectifs_total.csv', delimiter=',')
+effectifs_par_dept_annee = pd.read_csv('data\\cleaned\\effectifs_par_dept_annee.csv', delimiter=',')
+effectifs_par_commune_annee_sorted = pd.read_csv('data\\cleaned\\effectifs_par_commune_annee_sorted.csv', delimiter=',')
+delits_total = pd.read_csv('data\\cleaned\\delits_total.csv', delimiter=',')
+delits_par_dept_annee = pd.read_csv('data\\cleaned\\delits_par_dept_annee.csv', delimiter=',')
+delits_par_commune_annee = pd.read_csv('data\\cleaned\\delits_par_commune_annee.csv', delimiter=',')
+delits_par_commune_annee_sorted = pd.read_csv('data\\cleaned\\delits_par_commune_annee_sorted.csv', delimiter=',')
+merged_data = pd.read_csv('data\\cleaned\\merged_data.csv', delimiter=',')
 
 
-#création de dataframes pour chaque csv en précisant la délimitation des colonnes par les ','
-effectifs_2016 = pd.DataFrame(pd.read_csv(effectifs_2016_chemin,delimiter=','))
-effectifs_2017 = pd.DataFrame(pd.read_csv(effectifs_2017_chemin,delimiter=','))
-effectifs_2018 = pd.DataFrame(pd.read_csv(effectifs_2018_chemin,delimiter=','))
-#décommenter pour rendre les données filtrées
-#data_delits = pd.DataFrame(pd.read_csv(data_delits_chemin,delimiter=';')) #temps d'exécution trop long
-CODGEO_com = pd.DataFrame(pd.read_csv(CODGEO_communes_chemin,delimiter=','))
+# cas spécial pour les département à 1 chiffre, les écrire sous forme 01 au lieu de 1 (fait tjrs ca à l'ouverture du csv surement problème de type problème à régler si assez de temps)
+# sinon tous les département ne sont pas affichés (données dep ne correspondant pas avec celles de la carte de france)
+effectifs_par_dept_annee['Numero Departement'] = effectifs_par_dept_annee['Numero Departement'].apply(lambda x: str(x).zfill(2))
+delits_par_dept_annee['departement'] = delits_par_dept_annee['departement'].apply(lambda x: str(x).zfill(2))
 
 
 
+# Initialiser l'application Dash
+app = Dash(__name__)
 
-#effectifs_2016.columns[0] = colonne numéro département
-#effectifs_2016.columns[1] correspond à la colonne qui contient le nom des villes (2eme colonne), on renomme par Nom Ville, inplace = True 
-#permet de modifier directement le dataframe sans créer de nouvelle copie
+# Layout de l'application Dash avec des onglets pour séparer les différentes visualisations
+app.layout = html.Div(children=[
+    # Titre principal du tableau de bord
+    html.H1("Tableau de Bord des Effectifs de Police et des actes de délinquance recensés (2016-2018)", style={'textAlign': 'center', 'marginBottom': '20px'}),
 
-#pour 2018 : num departement colonne 1 (pas entre parentheses) et nom ville colonne 4
+    # Création des onglets pour passer d'une section à l'autre
+    dcc.Tabs(id="tabs", value='tab-intro', children=[
+        dcc.Tab(label='Introduction', value='tab-intro'), # onglet Introduction
+        dcc.Tab(label='Carte de France', value='tab-map'), # onglet Carte de France
+        dcc.Tab(label='Évolution des Effectifs', value='tab-evolution'),  # onglet Évolution des Effectifs
+        dcc.Tab(label='Délits par Intervalle de Population', value='tab-delits-intervalle'), # onglet Délits par Population
+        dcc.Tab(label='Effectifs vs Délits', value='tab-effectifs-vs-delits')  # onglet pour le nuage de points 
+
+    ]),
+
+    # Contenu qui changera en fonction de l'onglet sélectionné
+    html.Div(id='tabs-content')
+])
+
+# Callback pour afficher le contenu en fonction de l'onglet sélectionné
+@app.callback(Output('tabs-content', 'children'), Input('tabs', 'value'))
+def render_content(tab):
+    # onglet "Introduction"
+    if tab == 'tab-intro':
+        return html.Div([
+            html.H2("Bienvenue sur le tableau de bord"),
+            html.P("Ce tableau de bord présente les effectifs de police par département en France de 2016 à 2018.")
+        ])
+    
+    # onglet "Carte de France"
+    elif tab == 'tab-map':
+        # Carte de France des effectifs de police
+        fig_effectifs = px.choropleth(
+            # données des effectifs de police par département
+            effectifs_par_dept_annee, 
+            # URL du fichier GeoJSON de la carte de France
+            geojson="https://france-geojson.gregoiredavid.fr/repo/departements.geojson",
+            # colonne contenant les codes des départements
+            locations="Numero Departement",
+            # clé geojson
+            featureidkey="properties.code",
+            # données de la colonne somme_ligne définissant la couleur en fonction des effectifs
+            color="somme_ligne",
+            # colonne à afficher au survol du curseur de la souris
+            hover_name="Numero Departement",
+            # animation carte selon les années
+            animation_frame="Année",
+            # titre carte
+            title="Effectifs de Police par Département (2016-2018)",
+            # échelle de couleur (ici verte pour les effectifs)
+            color_continuous_scale="Greens",
+            # intervalle de couleurs
+            range_color=[0, 1500],
+            # changer le nom de l'échelle par Effectifs de police
+            labels={"somme_ligne": "Effectifs de police"}  
 
 
-effectifs_2016.rename(columns={effectifs_2016.columns[0]: 'Dep'}, inplace=True)
-effectifs_2017.rename(columns={effectifs_2017.columns[0] : 'Dep'}, inplace=True)
-effectifs_2018.rename(columns={effectifs_2018.columns[0]: 'Dep'}, inplace=True)
-
-effectifs_2016.rename(columns={effectifs_2016.columns[1]: 'Nom Ville'}, inplace=True)
-effectifs_2017.rename(columns={effectifs_2017.columns[1] : 'Nom Ville'}, inplace=True)
-effectifs_2018.rename(columns={effectifs_2018.columns[3]: 'Nom Ville'}, inplace=True)
-
-
-
-#ligne qui nous intéresse dans CODGEO_com = "NCC", il contient les noms des villes en majuscule et 'COM' qui contient les codgeo
-#ligne qui nous intéresse dans effectifs_2016 = "Nom Ville", il contient les noms des villes en majuscule
-#il faut maintenant ajouter une colonne dans effectifs_2016 qui donne le codgeo de la commune sur la ligne
-#pour cela on peut creer un dictionnaire à l'aide CODGEO_com qui contient les noms de villes en tant que clé et le codgeo en valeur
-
-#il faut que les noms des villes coincident donc tout mettre en majuscule et supprimer la partie entre () de la colonne Nom Ville
-#ne pas oublier de supprimer caractères spéciaux comme * par exemple et toutes les "anomalies"
-
-effectifs_2016['Nom Ville'] = effectifs_2016['Nom Ville'].str.encode('utf-8').str.decode('utf-8')
-effectifs_2017['Nom Ville'] = effectifs_2017['Nom Ville'].str.encode('utf-8').str.decode('utf-8')
-effectifs_2018['Nom Ville'] = effectifs_2018['Nom Ville'].str.encode('utf-8').str.decode('utf-8')
-
-
-def transformer_ville_effectifs(ville) : 
-#for ville in effectifs_2016['Nom Ville'] : 
-    if ville is not None : 
-        #supprimer texte apres la premiere parenthese
-        ville = re.sub(r'\(.*', '', str(ville)) 
-
-        #met tout le texte en majuscule
-        ville = str(ville).upper()        
-
-        #remplace les - en espace " "
-        ville = str(ville).replace("-", " ")  
-
-        #remplace les - en espace " "
-        ville = str(ville).replace("–", " ")       
-
-        # Supprimer les apostrophes typographiques ’
-        #ville = str(ville).replace("’", " ")  
-
-         # Supprimer toutes les variations d'apostrophes
-        ville = re.sub(r"[’‘']", " ", ville)
+        )
+        # ajuste la carte pour afficher seulement la France métropolitaine 
+        fig_effectifs.update_geos(fitbounds="locations", visible=False)
         
-        #remplace les ST en SAINT
-        ville = str(ville).replace("ST ", "SAINT ") 
+        # Carte de France des délits
+        fig_delits = px.choropleth(
+            delits_par_dept_annee,
+            geojson="https://france-geojson.gregoiredavid.fr/repo/departements.geojson",
+            locations="departement",
+            featureidkey="properties.code",
+            color="somme_ligne",
+            hover_name="departement",
+            animation_frame="annee",
+            title="Délits par Département (2016-2018)",
+            color_continuous_scale="Reds",
+            range_color=[0, 150000],
+            labels={"somme_ligne": "délits"}  
 
-        #remplace les ST en SAINT
-        ville = str(ville).replace("/", " SUR ")
-
-        #remplace les ST en SAINT
-        ville = str(ville).replace(" *", "")
-
-        #remplace les "L " en ""
-        #ville = str(ville).replace("L ", "") 
-
-        # Supprimer "L " en début de chaîne
-        ville = re.sub(r'^L\s+', '', str(ville))
+        )
+        fig_delits.update_geos(fitbounds="locations", visible=False)
         
-        # Supprimer LE ou LA ou LES en début de nom de ville
-        ville = re.sub(r'^(LE|LA|LES)\s+', '', ville)
-        
-        # Supprimer les accents
-        ville = ''.join(c for c in unicodedata.normalize('NFD', ville) if unicodedata.category(c) != 'Mn')
+        # affichage côte à côte des deux cartes
+        return html.Div(style={'display': 'flex', 'justifyContent': 'space-around'}, children=[
+            html.Div([
+                html.H3("Effectifs de Police par Département"),
+                dcc.Graph(figure=fig_effectifs)
+            ], style={'width': '45%'}),
+            html.Div([
+                html.H3("Délits par Département"),
+                dcc.Graph(figure=fig_delits)
+            ], style={'width': '45%'})
+        ])
+    
+    elif tab == 'tab-evolution':
+        # Graphique pour l'évolution des effectifs dans un département
+        return html.Div([
+            html.H2("Évolution des Effectifs de Police dans un Département"),
+            dcc.Dropdown(
+                 # id pour le menu déroulant (dropdwon) de sélection des départements
+                id='departement-dropdown', 
+                options=[
+                    {'label': f'Département {i}', 'value': str(i).zfill(2)} for i in range(1, 96)
+                ],
+                # département sélectionné par défaut 
+                value='93', 
+                style={'width': '50%', 'margin': 'auto'}
+            ),
+            dcc.Graph(id='evolution-graph')
+        ])
 
+
+    elif tab == 'tab-delits-intervalle':  # Onglet pour l'histogramme des délits par population
+        return html.Div([
+         html.H2("Histogramme des Délits en Fonction de la Population des Communes"),
+            dcc.Dropdown(
+            id='annee-delits-dropdown',
+            options=[
+                {'label': '2017', 'value': 2017},
+                {'label': '2018', 'value': 2018}
+            ],
+                value=2016,  # Valeur par défaut
+                style={'width': '50%', 'margin': 'auto'}
+             ),
+             # 2 histogramme pour les délits et effectifs
+            dcc.Graph(id='delits-intervalle-graph'),
+            dcc.Graph(id='effectifs-intervalle-graph') 
+        ])
+    elif tab == 'tab-effectifs-vs-delits':
+        # Onglet pour afficher le graphique Effectifs vs Délits
+        return html.Div([
+            html.H2("Relation entre les Effectifs de Police et les Délits par Département"),
+            dcc.Dropdown(
+                id='annee-effectifs-vs-delits-dropdown',
+                options=[
+                    {'label': '2017', 'value': 2017},
+                    {'label': '2018', 'value': 2018}
+                ],
+                value=2017,  # Valeur par défaut
+                style={'width': '50%', 'margin': 'auto'}
+            ),
+            dcc.Graph(id='effectifs-vs-delits-graph')
+        ])
+    
     
 
-    #retire les espaces inutiles
-    return ville.strip()                                    
-        #print(ville)
-
-
-
-effectifs_2016['Nom Ville'] = effectifs_2016['Nom Ville'].apply(transformer_ville_effectifs)
-effectifs_2017['Nom Ville'] = effectifs_2017['Nom Ville'].apply(transformer_ville_effectifs)
-effectifs_2018['Nom Ville'] = effectifs_2018['Nom Ville'].apply(transformer_ville_effectifs)
-
-
-
-
-#attention conserver le DE car souvent utilisé dans codgeo et voir tous les caractères spéciaux qui trainent
-#voir ligne 3043 2 villes dans 1 case
-#touquet paris plage écrit touquet dans effectifs_2016
-#a voir si / ecrit avec des espaces ou non
-#lorsqu'il y a des doublons, regarder le département dans effectifs, et comparer les valeurs codgeo, ne prendre que celle qui commence par le numéro du département
-#prochaine étape récupérer le v_commune pour 2016 et comparer, si c'est toujours la même chose alors s'arreter la 
-#concernant les différences liées à l'orthographe, je peux pas faire grand chose
-
-
-
-
-
-#création d'un dictionnaire qui stocke la colonne NCC en tant que clé et la colonne COM en tant que valeur
-
-'''
-CODGEO_NCC_COM = pd.DataFrame(CODGEO_com["NCC"],["COM"])
-doublons = CODGEO_NCC_COM.duplicated()
-print(doublons) #retourne false donc pas de doublons
-
-'''
-
-
-
-
-
-#1ere étape : trouver le nom du département pour la ville dans effectifs et créer une nouvelle colonne de ce type 60GOUVIEUX
-
-# Fonction pour extraire les numéros de département
-def extraire_numero_departement(texte):
-    # Utilise une expression régulière pour détecter les numéros de département entre parenthèses
-    match = re.search(r'\((\d{2})\)', texte)
-    #si match NULL (aucun numéro de département trouvé) alors ne rien renvoyer
-    if match:
-        #group(0) renvoie tout le motif trouvé, même avec les parenthèses or group(1) renvoie 1er sous groupe donc sans parentheses
-        #group indispensable car match contient des informations concernant le motif, pas le motif en lui-même
-        return match.group(1)
-    return None
-
-def extraire_nombres(texte):
-    # Utilise une expression régulière pour détecter toutes les séquences de chiffres
-    nombres = re.findall(r'\d+', texte)
-    # Joindre les nombres en une seule chaîne, ou renvoyer None s'il n'y a pas de nombre
-    return ''.join(nombres) if nombres else None
-
-
-
-#il faut que la colonne avec les numéros de départements soit une string sinon pourra pas gérer les NULL
-effectifs_2016['Dep'] = effectifs_2016['Dep'].astype(str)
-effectifs_2017['Dep'] = effectifs_2017['Dep'].astype(str)
-effectifs_2018['Dep'] = effectifs_2018['Dep'].astype(str)
-
-
-
-
-
-# Parcourir chaque ligne de 1ère colonne (qui contient les noms de départements)
-#for ligne in effectifs_2016['Dep']:
-
-
-
-#création de variable globale departement_actuel pour le début de la fonction : 1er département ligne 17 donc avant ca il n'y a rien
-departement_actuel = ""
-
-def ecrire_departements(ligne) : 
-    #accès à la variable globale
-    global departement_actuel
-    # Extraire le numéro de département, s'il y en a un
-    nouveau_departement = extraire_nombres(ligne)
-    if nouveau_departement:
-        departement_actuel = nouveau_departement  # Mettre à jour la variable
-        #print(f"Nouveau département détecté : {departement_actuel}")
-    #else:
-        #print(f"Ligne sans changement de département : {ligne}")
-    return departement_actuel
-
-
-
-#ok donc COMD signifie que la commune a fusionné avec une autre(même numéro codgeo) et numéro codgeo de la commune avec laquelle c'est fusionné est dans la colonne comparent
-#il faut donc récupérer le 1er numéro dans comparent car il correspond au département et remplir la colonne dep avec ce numéro
-
-#CODGEO_com['COMPARENT'] = CODGEO_com['COMPARENT'].astype(int)
-
-
-
-
-#convertir les colonnes DEP et COMPARENT en string (attention comparent devient des nombres flottants et DEP devient 01 au lieu de 1)
-CODGEO_com['DEP'] = CODGEO_com['DEP'].astype(str)
-CODGEO_com['COMPARENT'] = CODGEO_com['COMPARENT'].astype(str)
-
-
-
-
-#récupère 1er chiffre de comparent
-def transform_dep (texte) : 
-    #texte = str(texte)
-    #vérifier si premier element est un chiffre
-    if texte[0].isdigit():
-        #si 4 nombre = 4 chiffres alors département de type unité 01,02,03 etc
-        #print(texte)
-        if len(texte) == 6 :
-            return "0" + texte[0]
-        #sinon département = dizaine
-        else : 
-            return texte[0:2]
+# Callback pour mettre à jour le graphique en fonction du département sélectionné
+@app.callback(
+    Output('evolution-graph', 'figure'),
+    Input('departement-dropdown', 'value')
+)
+def update_graph(departement):
+    # filtrer les données pour le département sélectionné
+    dept_data = effectifs_par_dept_annee[effectifs_par_dept_annee["Numero Departement"] == departement]
     
+    # créer le graphique
+    fig = px.bar(
+    dept_data,
+    x="Année",
+    y="somme_ligne",
+    title=f"Évolution des Effectifs de Police dans le {departement}",
+     # pour colorier les barres en fonction de l'année
+    labels={"somme_ligne": "Nombre d'effectifs de police", "Année": "Année"},
+    barmode="group"  # affiche les barres côte à côte pour chaque année si besoin
+)
+    fig.update_layout(xaxis_title="Année", yaxis_title="Nombre d'effectifs de police")
+    return fig
 
 
+# Callback pour afficher l'histogramme des délits en fonction de la population des communes
+@app.callback(
+    [Output('delits-intervalle-graph', 'figure'),
+    Output('effectifs-intervalle-graph', 'figure')],
+    Input('annee-delits-dropdown', 'value')
+)
+def update_delits_graph(annee):
+    delits_filtered = delits_par_commune_annee_sorted[delits_par_commune_annee_sorted['annee'] == annee]
+    delits_filtered_sorted = delits_filtered.sort_values(by='POP', ascending=True)
+
+    # créer l'histogramme pour les délits
+    fig_delits = px.histogram(
+        delits_filtered_sorted,
+        x='POP',
+        y='somme_ligne',
+        histfunc='sum',
+        labels={'POP': 'Population des Communes', 'somme_ligne': 'Nombre de Délits'},
+        title=f"Histogramme des Délits en Fonction de la Population des Communes (Année {annee})",
+        # nombre de barres dans l'histogramme
+        nbins=1000
+    )
+
+    # Filtrer les données des effectifs pour l'année sélectionnée
+    effectifs_filtered = effectifs_par_commune_annee_sorted[effectifs_par_commune_annee_sorted['Année'] == annee]
+    effectifs_filtered_sorted = effectifs_filtered.sort_values(by='Nombre d habitants', ascending=True)
 
 
-#mettre le numéro du département dans la colonne DEP
-for index, row in CODGEO_com.iterrows():
+    # créer l'histogramme pour les effectifs
+    fig_effectifs = px.histogram(
+        effectifs_filtered_sorted,
+        x='Nombre d habitants',
+        y='somme_ligne',
+        histfunc='sum',
+        labels={'Nombre d habitant': 'Population des Communes', 'somme_ligne': 'Nombre d\'Effectifs'},
+        title=f"Histogramme des Effectifs en Fonction de la Population des Communes (Année {annee})",
+        nbins=1000
+    )
 
-    if row['COMPARENT'] != "nan": 
-        CODGEO_com.at[index, 'DEP'] = transform_dep(row['COMPARENT'])  # Mettre à jour le DataFrame directement        
-        #print(row['DEP'])
-
-#attention un peu long a exécuter
-
-
-
-
-#Dans la colonne CODGEO['COM'], il y a des zéros inutiles en début de nombre lorsque les numéros sont des taille 4 (4 chiffres) ex : 01051 au lieu de 1051
-#Donc on va changer ca 
-#retourne une string sans le zero d'indice 0 s'il y en a un
-def suppr_zero (texte) : 
-    if texte[0] == "0" : 
-        #retourne texte sans le zero d'indice 0
-        return texte[1::]
-    else :
-        return texte
-
-CODGEO_com['COM'] = CODGEO_com['COM'].apply(suppr_zero)
-
-#code testé fonctionnel 
+    return fig_delits, fig_effectifs
 
 
-
-#exception pour 2018, les départements sont de la forme 1,2,3.. et non 01,02,03.. donc changer ca
-
-def add_zero (texte) : 
-    if len(texte) == 1 : 
-        texte = "0" + texte
-    return texte
-
-
-
-effectifs_2016['Numero Departement'] = effectifs_2016['Dep'].apply(ecrire_departements)
-effectifs_2017['Numero Departement'] = effectifs_2017['Dep'].apply(ecrire_departements)
-effectifs_2018['Numero Departement'] = effectifs_2018['Dep'].apply(ecrire_departements)
-
-effectifs_2018['Numero Departement'] = effectifs_2018['Numero Departement'].apply(add_zero)
+# Callback pour afficher le graphique Effectifs vs Délits
+@app.callback(
+    Output('effectifs-vs-delits-graph', 'figure'),
+    Input('annee-effectifs-vs-delits-dropdown', 'value')
+)
+def update_effectifs_vs_delits_graph(annee):
+    # filtrer les données pour l'année sélectionnée et le nomnbre d'habitants
+    filtered_data = merged_data[merged_data['Année'] == annee]
+    # il faut normaliser la taille donc x100 et faire le rapport avec la taille max (pour l'échelle)
+    filtered_data['taille_cercle'] = filtered_data['Nombre d habitants'] / filtered_data['Nombre d habitants'].max() * 100  
 
 
-#print(effectifs_2016['Numero Departement'][150:200])
-#print(effectifs_2016['Nom Ville'][150:200])
-effectifs_2016['Numero Departement x Nom Ville'] = effectifs_2016['Numero Departement'] + effectifs_2016['Nom Ville']
-effectifs_2017['Numero Departement x Nom Ville'] = effectifs_2017['Numero Departement'] + effectifs_2017['Nom Ville']
-effectifs_2018['Numero Departement x Nom Ville'] = effectifs_2018['Numero Departement'] + effectifs_2018['Nom Ville']
-#print(effectifs_2018['Numero Departement x Nom Ville'][0:50])
-#ca marche
-#effectifs_2018.to_csv("C:\\Users\\Guillaume\\Downloads\\effectifs_2018,1.csv", index=False)
+    # Créer le nuage de points
+    fig = px.scatter(
+        filtered_data,
+        x='somme_ligne_effectifs',  # effectifs de police
+        y='somme_ligne_delits',     # nombre de délits
+        size='taille_cercle',       # taille des cercles en fonction de la population
+        color='CODGEO',  #  ville
+        hover_name='CODGEO',  # Afficher le code géographique au survol du curseur de la souris
+        labels={'somme_ligne_effectifs': 'Effectifs de Police', 'somme_ligne_delits': 'Délits'},
+        title=f"Relation entre les Effectifs de Police et les Délits (Année {annee})",
+        size_max=50,  # taille max des cercles
+
+    )
+    return fig
+
+# Lancement de l'application
+if __name__ == '__main__':
+    app.run_server(debug=True)
 
 
-
-#maintenant faire de meme pour codgeo_com
-CODGEO_com['Numero Departement x Nom Ville'] = CODGEO_com['DEP'] + CODGEO_com['NCC']
-#print(CODGEO_com['Numero Departement x Nom Ville'][0:50])
-
-#CODGEO_com.to_csv("C:\\Users\\Guillaume\\Downloads\\CODGEO_com.csv", index=False) #tres bien
-
-
-
-
-
-#creer dictionnaire avec clés = l'identifiant des villes (nom+num_dep) et valeurs = numero codgeo
-dictionnaire_codgeo = CODGEO_com.set_index('Numero Departement x Nom Ville')['COM'].to_dict()
-#print(dictionnaire_codgeo)
-
-#attribution des codgeo dans une nouvelle colonne CODGEO : utilisation de la méthode map qui associe les cles du dico le contenu de effectifs_2016['Numero Departement x Nom Ville'] (si les 2 matchent alors prendre codgeo assodcié à la clé correspondante)
-effectifs_2016['CODGEO'] = effectifs_2016['Numero Departement x Nom Ville'].map(dictionnaire_codgeo)
-effectifs_2017['CODGEO'] = effectifs_2017['Numero Departement x Nom Ville'].map(dictionnaire_codgeo)
-effectifs_2018['CODGEO'] = effectifs_2018['Numero Departement x Nom Ville'].map(dictionnaire_codgeo)
-
-#print(effectifs_2016['CODGEO'][0:50])
-#print(CODGEO_com['COM'][50:100])
-
-#recherche de doublons
-'''
-doublons = effectifs_2016[effectifs_2016['Nom Ville'].duplicated(keep=False)]
-
-for ville in doublons['Nom Ville'] : 
-    if ville != "NAN" :
-        print(ville)
-'''
-'''
-doublons_codgeo = CODGEO_com[CODGEO_com['NCC'].duplicated(keep=False)]
-
-for ville in doublons_codgeo['NCC'][0:100] : 
-    if ville != "NAN" :
-        print(ville)
-'''
-
-
-
-#print(effectifs_2016['Nom Ville'][215:232])
-#print(effectifs_2016[100:150])
-
-#effectifs_2016.to_csv("C:\\Users\\Guillaume\\Downloads\\effectifs_2016_test_codgeo.csv", index=False)
-
-#reste plus qu'a faire l'intervalle entre le CODGEO du dataframe avec les délits et celui avec les efffectifs
-#ainsi garder seulement les communes pour lesquelles toutes les données sont dispo (nombres et types de délits et effectifs policiers)
-
-#colonne avec les CODGEO dans le csv avec tous les délits : CODGEO_2024
-
-
-#décommenter pour rendre les données filtrées
-'''
-#print(data_delits.columns)
-data_delits['CODGEO_2024'] = data_delits['CODGEO_2024'].astype(str)
-
-
-# Comparer les colonnes DEP et COMPARENT, et ne garder que les lignes où les valeurs sont identiques
-df_intersection_2016 = data_delits[
-    (data_delits['CODGEO_2024'].isin(effectifs_2016['CODGEO'])) &
-    (data_delits['annee'] == 16)
-]
-print(df_intersection_2016)
-
-df_intersection_2017 = data_delits[
-    (data_delits['CODGEO_2024'].isin(effectifs_2017['CODGEO'])) &
-    (data_delits['annee'] == 17)
-]
-print(df_intersection_2017)
-
-df_intersection_2018 = data_delits[
-    (data_delits['CODGEO_2024'].isin(effectifs_2018['CODGEO'])) &
-    (data_delits['annee'] == 18)
-]
-print(df_intersection_2018)
-#df_intersection_2018.to_csv("C:\\Users\\Guillaume\\Downloads\\df_intersection_2018,1.csv", index=False)
-'''
