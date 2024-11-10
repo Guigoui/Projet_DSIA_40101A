@@ -223,6 +223,9 @@ df_intersection_delits_2016 = df_intersection_delits_2016.fillna(0)
 df_intersection_delits_2017 = df_intersection_delits_2017.fillna(0)
 df_intersection_delits_2018 = df_intersection_delits_2018.fillna(0)
 
+df_intersection_delits_2016['annee'] = df_intersection_delits_2016['annee'] + 2000
+df_intersection_delits_2017['annee'] = df_intersection_delits_2017['annee'] + 2000
+df_intersection_delits_2018['annee'] = df_intersection_delits_2018['annee'] + 2000
 
 # df_intersection_delits_2016.to_csv("data\\cleaned\\delits_2016.csv", index=False)
 # df_intersection_delits_2017.to_csv("data\\cleaned\\delits_2017.csv", index=False)
@@ -298,7 +301,10 @@ effectifs_total = pd.concat([df_intersection_effectifs_2016, df_intersection_eff
 # 11eme étape : créer différents df pour rendre les données plus pertinentes et utilisables
 
 # ne garder que les villes pour lesquelles on a des données sur 3 ans
-effectifs_total = effectifs_total.groupby('CODGEO').filter(lambda x: len(x) != 1)
+# on garde les villes pour 3 ans et non 2 (meme si on ne regarde que 2017 et 2018) car les délits ont été fait de cette manière donc il faut le format reste identique si l'on veut comparer les différents graphes entre eux
+# en effet, étant donnée que l'on a déjà fait l'intersection entre les délits et les effectifs, prendre les données sur 3 ans puis seulement 2 reviens a prendre plus de données pour les effectifs que les délits et rend ainsi une possible comparaison non valide
+# faire l'intersection entre 2 ou 3 années est différent (plus de données pour 2 années évidemment) donc on fait quand même l'intersection sur 3 ans ici
+effectifs_total = effectifs_total.groupby('CODGEO').filter(lambda x: len(x) == 3)
 
 effectifs_total_cols = effectifs_total[['Nombre de policiers municipaux', 
                                         'Nombre d ASVP',
@@ -352,12 +358,13 @@ effectifs_par_commune_annee = effectifs_total_pop.groupby(["CODGEO","Année","No
     col: "sum" for col in effectifs_total_cols.columns
 }).reset_index()
 
+effectifs_par_commune_annee['somme_ligne'] = effectifs_par_commune_annee.drop(['CODGEO', 'Année','Nombre d habitants'], axis=1).sum(axis=1)
 
 print(effectifs_par_commune_annee)
 
-effectifs_par_commune_sorted = effectifs_total_pop.sort_values(by='Nombre d habitants')
+effectifs_par_commune_annee_sorted = effectifs_par_commune_annee.sort_values(by='Nombre d habitants')
 
-print(effectifs_par_commune_sorted)
+print(effectifs_par_commune_annee_sorted)
 
 
 
@@ -463,15 +470,20 @@ delits_par_commune_annee_grouped = delits_par_commune_annee.groupby(
 
 # effectifs_total.to_csv("data\\cleaned\\effectifs_total.csv", index=False)
 # effectifs_par_dept_annee.to_csv("data\\cleaned\\effectifs_par_dept_annee.csv", index=False)
+# effectifs_par_commune_annee.to_csv("data\\cleaned\\effectifs_par_commune_annee.csv", index=False)
+# effectifs_par_commune_annee_sorted.to_csv("data\\cleaned\\effectifs_par_commune_annee_sorted.csv", index=False)
 # delits_total.to_csv("data\\cleaned\\delits_total.csv", index=False)
 # delits_par_dept_annee.to_csv("data\\cleaned\\delits_par_dept_annee.csv", index=False)
 # delits_par_commune_annee.to_csv("data\\cleaned\\delits_par_commune_annee.csv", index=False)
 # delits_par_commune_annee_grouped.to_csv("data\\cleaned\\delits_par_commune_annee_grouped.csv", index=False)
-# delits_par_commune_annee_sorted.to_csv("data\\cleaned\\delits_par_commune_annee_sorted.csv", index=False)
+delits_par_commune_annee_sorted.to_csv("data\\cleaned\\delits_par_commune_annee_sorted.csv", index=False)
 
 
 # print(delits_par_commune_annee)
+# print(delits_total)
 # print(delits_par_dept_annee)
-# print(effectifs_par_dept_annee)
+# print(delits_par_commune_annee_sorted)
+
+
 
 

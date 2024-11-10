@@ -6,6 +6,7 @@ from dash import Dash, dcc, html, Input, Output
 # Charger les données 
 effectifs_total = pd.read_csv('data\\cleaned\\effectifs_total.csv', delimiter=',')
 effectifs_par_dept_annee = pd.read_csv('data\\cleaned\\effectifs_par_dept_annee.csv', delimiter=',')
+effectifs_par_commune_annee_sorted = pd.read_csv('data\\cleaned\\effectifs_par_commune_annee_sorted.csv', delimiter=',')
 delits_total = pd.read_csv('data\\cleaned\\delits_total.csv', delimiter=',')
 delits_par_dept_annee = pd.read_csv('data\\cleaned\\delits_par_dept_annee.csv', delimiter=',')
 delits_par_commune_annee = pd.read_csv('data\\cleaned\\delits_par_commune_annee.csv', delimiter=',')
@@ -129,19 +130,21 @@ def render_content(tab):
 
     elif tab == 'tab-delits-intervalle':  # Onglet pour l'histogramme des délits par population
         return html.Div([
-            html.H2("Histogramme des Délits en Fonction de la Population des Communes"),
+         html.H2("Histogramme des Délits en Fonction de la Population des Communes"),
             dcc.Dropdown(
-                id='annee-delits-dropdown',
-                options=[
-                    {'label': '2016', 'value': 16},
-                    {'label': '2017', 'value': 17},
-                    {'label': '2018', 'value': 18}
-                ],
-                value=16,  # Valeur par défaut
+            id='annee-delits-dropdown',
+            options=[
+                {'label': '2017', 'value': 2017},
+                {'label': '2018', 'value': 2018}
+            ],
+                value=2016,  # Valeur par défaut
                 style={'width': '50%', 'margin': 'auto'}
-            ),
-            dcc.Graph(id='delits-intervalle-graph')
+             ),
+            dcc.Graph(id='delits-intervalle-graph'),
+            dcc.Graph(id='effectifs-intervalle-graph')  # Deuxième histogramme pour les effectifs
         ])
+    
+    
 
 # Callback pour mettre à jour le graphique en fonction du département sélectionné
 @app.callback(
@@ -149,18 +152,18 @@ def render_content(tab):
     Input('departement-dropdown', 'value')
 )
 def update_graph(departement):
-    # Filtrer les données pour le département sélectionné
+    # filtrer les données pour le département sélectionné
     dept_data = effectifs_par_dept_annee[effectifs_par_dept_annee["Numero Departement"] == departement]
     
-    # Créer le graphique
+    # créer le graphique
     fig = px.bar(
     dept_data,
     x="Année",
     y="somme_ligne",
     title=f"Évolution des Effectifs de Police dans le {departement}",
-     # Pour colorier les barres en fonction de l'année
+     # pour colorier les barres en fonction de l'année
     labels={"somme_ligne": "Nombre d'effectifs de police", "Année": "Année"},
-    barmode="group"  # Affiche les barres côte à côte pour chaque année si besoin
+    barmode="group"  # affiche les barres côte à côte pour chaque année si besoin
 )
     fig.update_layout(xaxis_title="Année", yaxis_title="Nombre d'effectifs de police")
     return fig
@@ -168,13 +171,16 @@ def update_graph(departement):
 
 # Callback pour afficher l'histogramme des délits en fonction de la population des communes
 @app.callback(
-    Output('delits-intervalle-graph', 'figure'),
+    [Output('delits-intervalle-graph', 'figure'),
+    Output('effectifs-intervalle-graph', 'figure')],
     Input('annee-delits-dropdown', 'value')
 )
 def update_delits_graph(annee):
     delits_filtered = delits_par_commune_annee_sorted[delits_par_commune_annee_sorted['annee'] == annee]
     delits_filtered_sorted = delits_filtered.sort_values(by='POP', ascending=True)
-    fig = px.histogram(
+
+    # créer l'histogramme pour les délits
+    fig_delits = px.histogram(
         delits_filtered_sorted,
         x='POP',
         y='somme_ligne',
@@ -184,7 +190,24 @@ def update_delits_graph(annee):
         # nombre de barres dans l'histogramme
         nbins=1000
     )
-    return fig
+
+    # Filtrer les données des effectifs pour l'année sélectionnée
+    effectifs_filtered = effectifs_par_commune_annee_sorted[effectifs_par_commune_annee_sorted['Année'] == annee]
+    effectifs_filtered_sorted = effectifs_filtered.sort_values(by='Nombre d habitants', ascending=True)
+
+
+    # créer l'histogramme pour les effectifs
+    fig_effectifs = px.histogram(
+        effectifs_filtered_sorted,
+        x='Nombre d habitants',
+        y='somme_ligne',
+        histfunc='sum',
+        labels={'Nombre d habitant': 'Population des Communes', 'somme_ligne': 'Nombre d\'Effectifs'},
+        title=f"Histogramme des Effectifs en Fonction de la Population des Communes (Année {annee})",
+        nbins=1000
+    )
+
+    return fig_delits, fig_effectifs
 
 # Lancement de l'application
 if __name__ == '__main__':
