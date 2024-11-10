@@ -7,8 +7,8 @@ Ce projet cherche à monter une corélation entre le nombre de policier municipa
 # Sommaire 
 
 ## Data sets (jeux de données)
-1. [Contexte](#1---Contexte)
-2. [Analyse des voies ferroviaires françaises](#2---Analyse-des-voies-ferroviaires-françaises)
+1. [ Introduction](#1--- Introduction)
+2. [Information sur les datas sets utilisés](#2---Information sur les datas sets utilisés)
 
 ## User guide
 1. [Prérequis d'installation](#1---Prérequis-dinstallation)
@@ -16,15 +16,15 @@ Ce projet cherche à monter une corélation entre le nombre de policier municipa
 3. [Présentation du Dashboard](#3---Présentation-du-dashboard)
 
 ## Guide du developpeur
-1. [Contexte](#1---Contexte)
-2. [Architecture du code](#2---Architecture-du-code)
+1. [Introduction](#1---Introduction)
+2. [Organisation du code ](#2---Organisation du code )
 3. [Ajouter une page](#3---Ajouter-une-page)
 4. [Suggestions d'améliorations futures](#4---Suggestions-daméliorations-futures)
 ---
 
 # Data sets
 
-## 1 - Contexte
+## 1 - Introduction
 
 Nous voulions à travers ces deux jeux de données savoir si il y avait une corrélation entre les effectifis de la police municipales et les délits commits dans les villes. 
 
