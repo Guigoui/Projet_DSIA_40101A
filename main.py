@@ -50,7 +50,15 @@ def render_content(tab):
     if tab == 'tab-intro':
         return html.Div([
             html.H2("Bienvenue sur le tableau de bord"),
-            html.P("Ce tableau de bord présente les effectifs de police par département en France de 2016 à 2018.")
+             html.P("Explorez ce dashboard réaliser par Romain Yerolymos et Guillaume Curtis. Ce tableau de bord interactif vous permet de visualiser les données et de comprendre les tendances régionales au fil des années."),
+             html.Br(),
+             html.P("La première page affiche les données sur des cartes."),
+             html.Br(),
+             html.P("La deuxième page affiche l'evolution des effectifs de police en fonction du département."),
+             html.Br(),
+             html.P("La troisième page affiche les données des délits et des effctifs de police en fonction de la population."),
+             html.Br(),
+             html.P("La quatrième page affiche les délits en fonction du nombre de policier.")
         ])
     
     # onglet "Carte de France"
