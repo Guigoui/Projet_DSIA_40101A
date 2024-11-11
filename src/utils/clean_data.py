@@ -468,15 +468,29 @@ delits_par_commune_annee_grouped = delits_par_commune_annee.groupby(
 
 
 
-# effectifs_total.to_csv("data\\cleaned\\effectifs_total.csv", index=False)
-# effectifs_par_dept_annee.to_csv("data\\cleaned\\effectifs_par_dept_annee.csv", index=False)
-# effectifs_par_commune_annee.to_csv("data\\cleaned\\effectifs_par_commune_annee.csv", index=False)
-# effectifs_par_commune_annee_sorted.to_csv("data\\cleaned\\effectifs_par_commune_annee_sorted.csv", index=False)
-# delits_total.to_csv("data\\cleaned\\delits_total.csv", index=False)
-# delits_par_dept_annee.to_csv("data\\cleaned\\delits_par_dept_annee.csv", index=False)
-# delits_par_commune_annee.to_csv("data\\cleaned\\delits_par_commune_annee.csv", index=False)
-# delits_par_commune_annee_grouped.to_csv("data\\cleaned\\delits_par_commune_annee_grouped.csv", index=False)
+# fusionner les données sur les effectifs et les délits par commune et par année pour faire le graphe delits en fonction d effectifs
+merged_data = pd.merge(
+    effectifs_par_commune_annee_sorted[['CODGEO', 'Année', 'somme_ligne','Nombre d habitants']],
+    delits_par_commune_annee_sorted[['CODGEO_2024', 'annee', 'somme_ligne']],
+    left_on=['CODGEO', 'Année'], right_on=['CODGEO_2024', 'annee'],
+    suffixes=('_effectifs', '_delits')
+)
+
+print(merged_data)
+
+
+
+
+effectifs_total.to_csv("data\\cleaned\\effectifs_total.csv", index=False)
+effectifs_par_dept_annee.to_csv("data\\cleaned\\effectifs_par_dept_annee.csv", index=False)
+effectifs_par_commune_annee.to_csv("data\\cleaned\\effectifs_par_commune_annee.csv", index=False)
+effectifs_par_commune_annee_sorted.to_csv("data\\cleaned\\effectifs_par_commune_annee_sorted.csv", index=False)
+delits_total.to_csv("data\\cleaned\\delits_total.csv", index=False)
+delits_par_dept_annee.to_csv("data\\cleaned\\delits_par_dept_annee.csv", index=False)
+delits_par_commune_annee.to_csv("data\\cleaned\\delits_par_commune_annee.csv", index=False)
+delits_par_commune_annee_grouped.to_csv("data\\cleaned\\delits_par_commune_annee_grouped.csv", index=False)
 delits_par_commune_annee_sorted.to_csv("data\\cleaned\\delits_par_commune_annee_sorted.csv", index=False)
+merged_data.to_csv("data\\cleaned\\merged_data.csv", index=False)
 
 
 # print(delits_par_commune_annee)
