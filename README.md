@@ -173,6 +173,11 @@ Puis rajouter une condition d'apparition avec un elif
 - Ajouter d'autres graphiques pour observer une tendance précise sur chaque département.
 - Améliorer l'interface graphique.
 
+
+# Copyright 
+
+-Je déclare sur l’honneur que le code fourni a été produit par nous même.
+
   
 
 
